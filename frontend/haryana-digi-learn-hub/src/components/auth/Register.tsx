@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
-import haryanaLogo from "@/assets/https___www.pngguru.in_storage_uploads_images_Haryana Govt Logo free png, Govt of haryana png logo_1665496339_1922488633.png";
+import haryanaLogo from "@/assets/logo.png";
 
 const Register = () => {
   const [formData, setFormData] = useState({

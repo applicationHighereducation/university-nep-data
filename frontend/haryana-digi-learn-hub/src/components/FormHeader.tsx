@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button } from "@/components/ui/button";
 import { LogIn, UserPlus } from "lucide-react";
-import haryanaLogo from "@/assets/https___www.pngguru.in_storage_uploads_images_Haryana Govt Logo free png, Govt of haryana png logo_1665496339_1922488633.png";
+import haryanaLogo from "@/assets/logo.png";
 import {Link} from 'react-router-dom'
 
 type FormHeaderProps = {
