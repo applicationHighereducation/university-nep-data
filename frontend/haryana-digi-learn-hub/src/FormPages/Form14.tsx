@@ -1,50 +1,16 @@
-// CollegeProgramForm5.tsx
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import './Form14.css';
+import React, { useState, FormEvent } from 'react';
+import './Form1.css';
 import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
-import FormPage from '../components/FormPage';
 import Page14 from '../pages/Page14';
 
-// Type definitions
+// ====================================
+// TYPE DEFINITIONS
+// ====================================
 interface FormData {
-  college: string;
-  totalPrograms: string | number;
-  ugcFollowed: string;
-  ugProgramsNumber: string | number;
-  ugProgramsPercentage: string | number;
-  regulatingCouncilsNumber: string | number;
-  regulatingCouncilsNames: string;
-  regulatingCouncilsPercentage: string | number;
-  ccfugpProgramsNumber: string | number;
-  ccfugpProgramsPercentage: string | number;
-  bachelorDegreeNumber: string | number;
-  bachelorDegreeList: string;
-  bachelorDegreePercentage: string | number;
-  bVocNumber: string | number;
-  bVocList: string;
-  bVocPercentage: string | number;
-}
-
-interface CollegeInfo {
-  programs: number;
-  ugcFollowed: string;
-  ugProgramsNumber: number;
-  ugProgramsPercentage: number;
-  regulatingCouncilsNumber: number;
-  regulatingCouncilsPercentage: number;
-  bachelorDegreeNumber: number;
-  bachelorDegreePercentage: number;
-  bVocNumber: number;
-  bVocPercentage: number;
-}
-
-interface CollegeData {
-  [key: string]: CollegeInfo;
-}
-
-interface FormErrors {
-  [key: string]: string;
+  // Section 1: Overall Exit and Entry Data
+  overallStudentsExitPercentage: string | number;
+  overallStudentsMultipleEntryPercentage: string | number;
 }
 
 interface Section {
@@ -54,165 +20,94 @@ interface Section {
   fields: string[];
 }
 
-const CollegeProgramForm14: React.FC = () => {
+// ====================================
+// MAIN COMPONENT
+// ====================================
+const OverallExitEntryForm: React.FC = () => {
   const [currentSection, setCurrentSection] = useState<number>(0);
   const [completedSections, setCompletedSections] = useState<Set<number>>(new Set());
-  const [formData, setFormData] = useState<FormData>({
-    college: '',
-    totalPrograms: '',
-    ugcFollowed: '',
-    ugProgramsNumber: '',
-    ugProgramsPercentage: '',
-    regulatingCouncilsNumber: '',
-    regulatingCouncilsNames: '',
-    regulatingCouncilsPercentage: '',
-    ccfugpProgramsNumber: '',
-    ccfugpProgramsPercentage: '',
-    bachelorDegreeNumber: '',
-    bachelorDegreeList: '',
-    bachelorDegreePercentage: '',
-    bVocNumber: '',
-    bVocList: '',
-    bVocPercentage: ''
-  });
-
   const [submitted, setSubmitted] = useState<boolean>(false);
-  const [errors, setErrors] = useState<FormErrors>({});
+  
+  const [formData, setFormData] = useState<FormData>({
+    // Default values set to 0 for percentages
+    overallStudentsExitPercentage: 0,
+    overallStudentsMultipleEntryPercentage: 0,
+  });
 
   // Define sections
   const sections: Section[] = [
-    {
-      id: 0,
-      title: "Institution Selection",
-      description: "Select your institution and view program overview",
-      fields: ['college', 'totalPrograms']
-    },
-    {
-      id: 1,
-      title: "UGC CCFUGP Information", 
-      description: "Provide details about UGC CCFUGP alignment",
-      fields: ['ugcFollowed', 'ugProgramsNumber', 'ugProgramsPercentage']
-    },
-    {
-      id: 2,
-      title: "Regulating Councils",
-      description: "Information about regulating council alignments", 
-      fields: ['regulatingCouncilsNumber', 'regulatingCouncilsNames', 'regulatingCouncilsPercentage']
-    },
-    {
-      id: 3,
-      title: "Non-Aligned Programs",
-      description: "Programs not aligned to CCFUGP or councils",
-      fields: ['ccfugpProgramsNumber', 'ccfugpProgramsPercentage']
-    },
-    {
-      id: 4,
-      title: "Bachelor Degree Programs", 
-      description: "3-year bachelor degree program details",
-      fields: ['bachelorDegreeNumber', 'bachelorDegreeList', 'bachelorDegreePercentage']
-    },
-    {
-      id: 5,
-      title: "B.VOC Programs",
-      description: "Bachelor of Vocation program information", 
-      fields: ['bVocNumber', 'bVocList', 'bVocPercentage']
-    },
-    {
-      id: 6,
-      title: "Review & Submit",
-      description: "Review all information before submission",
-      fields: []
-    }
+    { id: 0, title: "Overall Exit and Entry Data", description: "Overall student exit and multiple entry percentages", fields: [] },
+    { id: 1, title: "Review", description: "Review all information before submission", fields: [] },
+    { id: 2, title: "Submit", description: "Final submission", fields: [] }
   ];
 
-  // College data from CSV
-  const collegeData: CollegeData = {
-    'JCBUST': {
-      programs: 20, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 2,
-      ugProgramsPercentage: 10,
-      regulatingCouncilsNumber: 10,
-      regulatingCouncilsPercentage: 50,
-      bachelorDegreeNumber: 3,
-      bachelorDegreePercentage: 15,
-      bVocNumber: 5,
-      bVocPercentage: 25
-    },
-    'GJU': { 
-      programs: 10, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 3,
-      ugProgramsPercentage: 30,
-      regulatingCouncilsNumber: 5,
-      regulatingCouncilsPercentage: 50,
-      bachelorDegreeNumber: 0,
-      bachelorDegreePercentage: 0,
-      bVocNumber: 1,
-      bVocPercentage: 10
-    },
-    'Manav Rachna': { 
-      programs: 15, 
-      ugcFollowed: 'No',
-      ugProgramsNumber: 0,
-      ugProgramsPercentage: 0,
-      regulatingCouncilsNumber: 10,
-      regulatingCouncilsPercentage: 66.6666667,
-      bachelorDegreeNumber: 2,
-      bachelorDegreePercentage: 13.3333333,
-      bVocNumber: 1,
-      bVocPercentage: 6.6666667
-    },
-    'DCRUST': { 
-      programs: 25, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 6,
-      ugProgramsPercentage: 24,
-      regulatingCouncilsNumber: 12,
-      regulatingCouncilsPercentage: 48,
-      bachelorDegreeNumber: 0,
-      bachelorDegreePercentage: 0,
-      bVocNumber: 3,
-      bVocPercentage: 12
-    }
-  };
-
+  // ====================================
+  // UTILITY FUNCTIONS
+  // ====================================
   const updateFormData = (field: keyof FormData, value: string | number): void => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+    setFormData(prev => ({ ...prev, [field]: value === '' ? 0 : value }));
+  };
+
+  // Function to get mobility assessment
+  const getMobilityAssessment = (exitRate: number, entryRate: number): { status: string; color: string; description: string } => {
+    const netMobility = entryRate - exitRate;
+    
+    if (Math.abs(netMobility) <= 2) {
+      return {
+        status: 'Balanced',
+        color: '#17a2b8',
+        description: 'Entry and exit rates are well balanced, indicating stable student flow.'
+      };
+    } else if (netMobility > 2) {
+      return {
+        status: 'Growth',
+        color: '#28a745',
+        description: 'More students entering than exiting, indicating institutional growth and attractiveness.'
+      };
+    } else {
+      return {
+        status: 'Contraction',
+        color: '#dc3545',
+        description: 'More students exiting than entering, may require attention to retention strategies.'
+      };
     }
   };
 
-  const validateSection = (sectionId: number): boolean => {
-    const newErrors: FormErrors = {};
-
-    // Validation for each section
-    switch (sectionId) {
-      case 0: // Institution Selection
-        if (!formData.college) {
-          newErrors.college = 'Please select an institution';
-        }
-        break;
-      case 1: // UGC CCFUGP
-        if (!formData.ugcFollowed) {
-          newErrors.ugcFollowed = 'Please select if UGC CCFUGP is followed';
-        }
-        break;
-      // Add more validations as needed
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  // Generic component for rendering percentage input
+  const renderPercentageInput = (
+    label: string,
+    field: keyof FormData,
+    required = false
+  ): JSX.Element => {
+    return (
+      <div className="form-group form-group-full">
+        <label className="label">
+          {label} {required && <span className="required">*</span>}
+        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <input
+            type="number"
+            className="input"
+            value={formData[field]}
+            onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : e.target.value)}
+            min="0"
+            max="100"
+            step="0.01"
+            style={{ flex: 1 }}
+          />
+          <span style={{ fontSize: '1.1rem', fontWeight: '500', color: '#495057' }}>%</span>
+        </div>
+      </div>
+    );
   };
 
+  // ====================================
+  // EVENT HANDLERS
+  // ====================================
   const handleNext = (): void => {
-    if (validateSection(currentSection)) {
-      setCompletedSections(prev => new Set([...prev, currentSection]));
-      if (currentSection < sections.length - 1) {
-        setCurrentSection(prev => prev + 1);
-      }
+    setCompletedSections(prev => new Set([...prev, currentSection]));
+    if (currentSection < sections.length - 1) {
+      setCurrentSection(prev => prev + 1);
     }
   };
 
@@ -223,445 +118,361 @@ const CollegeProgramForm14: React.FC = () => {
   };
 
   const handleSectionClick = (sectionId: number): void => {
-    // Allow navigation to completed sections or the next incomplete section
     const maxAllowedSection = Math.max(...Array.from(completedSections), -1) + 1;
     if (sectionId <= maxAllowedSection) {
       setCurrentSection(sectionId);
     }
   };
 
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    console.log('Overall Exit and Entry Form submitted:', formData);
+    setSubmitted(true);
+    
+    // Show popup and redirect after delay
+    setTimeout(() => {
+      window.location.href = '/form/page15';
+    }, 2000);
+  };
+
+  const handleNavigateToNextForm = (): void => {
+    window.location.href = '/form/page15';
+  };
+
   const resetForm = (): void => {
     setFormData({
-      college: '',
-      totalPrograms: '',
-      ugcFollowed: '',
-      ugProgramsNumber: '',
-      ugProgramsPercentage: '',
-      regulatingCouncilsNumber: '',
-      regulatingCouncilsNames: '',
-      regulatingCouncilsPercentage: '',
-      ccfugpProgramsNumber: '',
-      ccfugpProgramsPercentage: '',
-      bachelorDegreeNumber: '',
-      bachelorDegreeList: '',
-      bachelorDegreePercentage: '',
-      bVocNumber: '',
-      bVocList: '',
-      bVocPercentage: ''
+      // Reset to default values (0 for percentages)
+      overallStudentsExitPercentage: 0,
+      overallStudentsMultipleEntryPercentage: 0,
     });
-    setErrors({});
     setSubmitted(false);
     setCurrentSection(0);
     setCompletedSections(new Set());
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    setSubmitted(true);
+  // ====================================
+  // SECTION RENDERERS
+  // ====================================
+  
+  // SECTION 0: OVERALL EXIT AND ENTRY DATA
+  const renderOverallExitEntryData = (): JSX.Element => {
+    const exitRate = Number(formData.overallStudentsExitPercentage) || 0;
+    const entryRate = Number(formData.overallStudentsMultipleEntryPercentage) || 0;
+    const mobilityAssessment = getMobilityAssessment(exitRate, entryRate);
+
+    return (
+      <div className="form-section">
+        <h2 className="section-title">Overall Exit and Entry Data</h2>
+        <p className="section-description">Overall student exit and multiple entry percentages</p>
+
+        <div className="form-grid">
+          {renderPercentageInput(
+            'Overall: Students who took Exit in the year - % of total enrolled',
+            'overallStudentsExitPercentage'
+          )}
+          
+          {renderPercentageInput(
+            'Overall: Students who took Multiple Entry in the year - % of total enrolled',
+            'overallStudentsMultipleEntryPercentage'
+          )}
+        </div>
+
+        {/* Live analytics summary */}
+        {(exitRate > 0 || entryRate > 0) && (
+          <div style={{ marginTop: '25px' }}>
+            <div style={{ 
+              padding: '15px', 
+              backgroundColor: '#f8f9fa', 
+              border: '1px solid #e9ecef', 
+              borderRadius: '6px'
+            }}>
+              <h4 style={{ margin: '0 0 12px 0', color: '#2c3e50', fontSize: '1.1rem' }}>
+                📊 Live Student Mobility Analysis
+              </h4>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                <div style={{ 
+                  padding: '10px', 
+                  backgroundColor: '#fff3cd', 
+                  border: '1px solid #ffeaa7', 
+                  borderRadius: '4px',
+                  textAlign: 'center'
+                }}>
+                  <strong style={{ color: '#856404' }}>Exit Rate</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontWeight: 'bold', color: '#856404' }}>
+                    {exitRate.toFixed(2)}%
+                  </p>
+                </div>
+                
+                <div style={{ 
+                  padding: '10px', 
+                  backgroundColor: '#d1ecf1', 
+                  border: '1px solid #bee5eb', 
+                  borderRadius: '4px',
+                  textAlign: 'center'
+                }}>
+                  <strong style={{ color: '#0c5460' }}>Entry Rate</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontWeight: 'bold', color: '#0c5460' }}>
+                    {entryRate.toFixed(2)}%
+                  </p>
+                </div>
+                
+                <div style={{ 
+                  padding: '10px', 
+                  backgroundColor: mobilityAssessment.color === '#28a745' ? '#d4edda' : 
+                                   mobilityAssessment.color === '#dc3545' ? '#f8d7da' : '#d1ecf1',
+                  border: `1px solid ${mobilityAssessment.color === '#28a745' ? '#c3e6cb' : 
+                                      mobilityAssessment.color === '#dc3545' ? '#f5c6cb' : '#bee5eb'}`,
+                  borderRadius: '4px',
+                  textAlign: 'center'
+                }}>
+                  <strong style={{ color: mobilityAssessment.color }}>Net Mobility</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontWeight: 'bold', color: mobilityAssessment.color }}>
+                    {(entryRate - exitRate).toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+              
+              <div style={{ 
+                marginTop: '12px', 
+                padding: '8px 12px', 
+                backgroundColor: mobilityAssessment.color === '#28a745' ? '#d4edda' : 
+                                 mobilityAssessment.color === '#dc3545' ? '#f8d7da' : '#d1ecf1',
+                border: `1px solid ${mobilityAssessment.color === '#28a745' ? '#c3e6cb' : 
+                                    mobilityAssessment.color === '#dc3545' ? '#f5c6cb' : '#bee5eb'}`,
+                borderRadius: '4px'
+              }}>
+                <p style={{ 
+                  margin: 0, 
+                  fontSize: '0.9rem', 
+                  color: mobilityAssessment.color,
+                  fontWeight: '500'
+                }}>
+                  <strong>Status: {mobilityAssessment.status}</strong> - {mobilityAssessment.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // SECTION 1: REVIEW
+  const renderReview = (): JSX.Element => {
+    const exitPercentage = Number(formData.overallStudentsExitPercentage) || 0;
+    const multipleEntryPercentage = Number(formData.overallStudentsMultipleEntryPercentage) || 0;
+    const netMobility = multipleEntryPercentage - exitPercentage;
+    const mobilityAssessment = getMobilityAssessment(exitPercentage, multipleEntryPercentage);
     
-    // Reset form after 5 seconds
-    setTimeout(() => {
-      resetForm();
-    }, 5000);
+    return (
+      <div className="form-section">
+        <h2 className="section-title">Review</h2>
+        <p className="section-description">Review all information before submission</p>
+        
+        <div className="summary-grid">
+          <div className="summary-card">
+            <h4>Exit Statistics</h4>
+            <p><strong>Students Who Took Exit:</strong> {exitPercentage.toFixed(2)}% of total enrolled</p>
+            <p><strong>Exit Rate Category:</strong> {
+              exitPercentage <= 5 ? '🟢 Very Low' :
+              exitPercentage <= 15 ? '🟡 Low' :
+              exitPercentage <= 30 ? '🟠 Moderate' : '🔴 High'
+            }</p>
+            <p style={{ color: '#6c757d', fontSize: '0.9rem', marginTop: '10px' }}>
+              This represents the proportion of enrolled students who opted for exit provisions during the academic year.
+            </p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Multiple Entry Statistics</h4>
+            <p><strong>Students Who Took Multiple Entry:</strong> {multipleEntryPercentage.toFixed(2)}% of total enrolled</p>
+            <p><strong>Entry Rate Category:</strong> {
+              multipleEntryPercentage <= 5 ? '🔴 Very Low' :
+              multipleEntryPercentage <= 15 ? '🟠 Low' :
+              multipleEntryPercentage <= 30 ? '🟡 Moderate' : '🟢 High'
+            }</p>
+            <p style={{ color: '#6c757d', fontSize: '0.9rem', marginTop: '10px' }}>
+              This represents the proportion of enrolled students who utilized multiple entry provisions during the academic year.
+            </p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Mobility Analysis</h4>
+            <p><strong>Net Mobility Rate:</strong> {netMobility.toFixed(2)}%</p>
+            <p><strong>Mobility Status:</strong> <span style={{ color: mobilityAssessment.color, fontWeight: 'bold' }}>
+              {mobilityAssessment.status}
+            </span></p>
+            <p><strong>Absolute Mobility:</strong> {Math.abs(netMobility).toFixed(2)}%</p>
+            <p><strong>Mobility Ratio:</strong> {
+              exitPercentage > 0 ? `1:${(multipleEntryPercentage / exitPercentage).toFixed(2)}` : 'N/A'
+            } (Entry:Exit)</p>
+            <p style={{ color: '#6c757d', fontSize: '0.9rem', marginTop: '10px' }}>
+              {mobilityAssessment.description}
+            </p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Key Performance Indicators</h4>
+            <p><strong>Exit Flexibility:</strong> {
+              exitPercentage > 0 ? '✅ Available' : '❌ Not Utilized'
+            }</p>
+            <p><strong>Multiple Entry Support:</strong> {
+              multipleEntryPercentage > 0 ? '✅ Active' : '❌ Not Utilized'
+            }</p>
+            <p><strong>Student Choice Options:</strong> {
+              (exitPercentage > 0 ? 1 : 0) + (multipleEntryPercentage > 0 ? 1 : 0)
+            }/2 pathways active</p>
+            <p><strong>Policy Effectiveness:</strong> {
+              exitPercentage > 0 && multipleEntryPercentage > 0 ? '🟢 Comprehensive' :
+              exitPercentage > 0 || multipleEntryPercentage > 0 ? '🟡 Partial' : '🔴 Inactive'
+            }</p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Comparative Assessment</h4>
+            <p><strong>Dominant Flow:</strong> {
+              Math.abs(netMobility) <= 1 ? 'Balanced mobility' :
+              multipleEntryPercentage > exitPercentage ? 'Entry-dominant' : 'Exit-dominant'
+            }</p>
+            <p><strong>Flow Intensity:</strong> {
+              Math.abs(netMobility) <= 2 ? 'Low' :
+              Math.abs(netMobility) <= 10 ? 'Moderate' : 'High'
+            }</p>
+            <p><strong>Total Student Mobility:</strong> {(exitPercentage + multipleEntryPercentage).toFixed(2)}%</p>
+            <p><strong>Retention Indicator:</strong> {
+              exitPercentage <= 10 ? '🟢 Strong retention' :
+              exitPercentage <= 25 ? '🟡 Moderate retention' : '🔴 Retention concerns'
+            }</p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Data Quality & Insights</h4>
+            <p><strong>Data Completeness:</strong> {
+              exitPercentage >= 0 && multipleEntryPercentage >= 0 ? '✅ Complete' : '❌ Incomplete'
+            }</p>
+            <p><strong>Logical Consistency:</strong> {
+              exitPercentage >= 0 && multipleEntryPercentage >= 0 && 
+              exitPercentage <= 100 && multipleEntryPercentage <= 100 ? '✅ Valid' : '❌ Invalid'
+            }</p>
+            <p><strong>Policy Impact:</strong> {
+              exitPercentage > 0 || multipleEntryPercentage > 0 ? 'Measurable' : 'No impact recorded'
+            }</p>
+            <p><strong>Strategic Insight:</strong> {
+              netMobility > 5 ? 'Focus on exit process optimization' :
+              netMobility < -5 ? 'Focus on entry pathway enhancement' : 'Maintain current balance'
+            }</p>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '30px', textAlign: 'center' }}>
+          <div style={{ 
+            padding: '15px', 
+            backgroundColor: mobilityAssessment.color === '#28a745' ? '#d4edda' : 
+                             mobilityAssessment.color === '#dc3545' ? '#f8d7da' : '#d1ecf1',
+            border: `1px solid ${mobilityAssessment.color === '#28a745' ? '#c3e6cb' : 
+                                mobilityAssessment.color === '#dc3545' ? '#f5c6cb' : '#bee5eb'}`,
+            borderRadius: '6px',
+            marginBottom: '20px'
+          }}>
+            <h4 style={{ margin: '0 0 8px 0', color: mobilityAssessment.color }}>
+              Overall Assessment: {mobilityAssessment.status}
+            </h4>
+            <p style={{ margin: 0, color: mobilityAssessment.color, fontSize: '0.95rem' }}>
+              {mobilityAssessment.description}
+            </p>
+          </div>
+          
+          <p style={{ fontSize: '1.1rem', color: '#6c757d', marginBottom: '20px' }}>
+            Please review all the information above. If everything looks correct, proceed to the next step for final submission.
+          </p>
+        </div>
+      </div>
+    );
   };
 
-  // Auto-populate fields when college is selected
-  useEffect(() => {
-    if (formData.college && collegeData[formData.college]) {
-      const data: CollegeInfo = collegeData[formData.college];
-      setFormData(prev => ({
-        ...prev,
-        totalPrograms: data.programs,
-        ugcFollowed: data.ugcFollowed,
-        ugProgramsNumber: data.ugProgramsNumber,
-        ugProgramsPercentage: data.ugProgramsPercentage,
-        regulatingCouncilsNumber: data.regulatingCouncilsNumber,
-        regulatingCouncilsPercentage: data.regulatingCouncilsPercentage,
-        bachelorDegreeNumber: data.bachelorDegreeNumber,
-        bachelorDegreePercentage: data.bachelorDegreePercentage,
-        bVocNumber: data.bVocNumber,
-        bVocPercentage: data.bVocPercentage
-      }));
-    }
-  }, [formData.college]);
+  // SECTION 2: SUBMIT
+  const renderSubmit = (): JSX.Element => (
+    <div className="form-section">
+      <h2 className="section-title">Submit</h2>
+      <p className="section-description">Final submission</p>
+      
+      {submitted ? (
+        <div className="success-message">
+          <div className="success-icon">✅</div>
+          <h3>Overall Exit and Entry Form Submitted Successfully!</h3>
+          <p>Thank you for your submission. Your overall exit and entry data has been recorded.</p>
+          <p>Redirecting to next form...</p>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>Ready to Submit</h3>
+          <p style={{ fontSize: '1.1rem', color: '#6c757d', marginBottom: '30px', lineHeight: '1.6' }}>
+            You have reviewed all your information. Click the "Submit Form" button below to finalize your submission.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={(e) => {
+              const formEvent = { preventDefault: () => {} } as FormEvent<HTMLFormElement>;
+              handleSubmit(formEvent);
+            }}
+            style={{ 
+              padding: '15px 40px', 
+              fontSize: '1.1rem',
+              minWidth: '200px',
+              background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+              border: 'none'
+            }}
+          >
+            Submit Form
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
+  // ====================================
+  // MAIN RENDER FUNCTION
+  // ====================================
   const renderSection = (): JSX.Element => {
-    const section = sections[currentSection];
-
     switch (currentSection) {
-      case 0: // Institution Selection
-        return (
-          <div className="form-section">
-            <h2 className="section-title">{section.title}</h2>
-            <p className="section-description">{section.description}</p>
-            
-            <div className="form-grid">
-              <div className="form-group form-group-full">
-                <label className="label">
-                  Select Institution <span className="required">*</span>
-                </label>
-                <select
-                  className="select"
-                  value={formData.college}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => updateFormData('college', e.target.value)}
-                  required
-                >
-                  <option value="">-- Select Institution --</option>
-                  <option value="JCBUST">JCBUST</option>
-                  <option value="GJU">GJU</option>
-                  <option value="Manav Rachna">Manav Rachna</option>
-                  <option value="DCRUST">DCRUST</option>
-                </select>
-                {errors.college && <span className="validation-message">{errors.college}</span>}
-              </div>
-
-              {formData.college && (
-                <div className="card">
-                  <h3 className="card-title">{formData.totalPrograms || '0'}</h3>
-                  <p className="card-subtitle">Total Number of Programs</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-// UGC CCFUGP Information
-case 1:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group form-group-full">
-          <label className="label">
-            Is UGC CCFUGP followed? <span className="required">*</span>
-          </label>
-          <div className="radio-group">
-            <div
-              className={`radio-option ${formData.ugcFollowed === 'Yes' ? 'selected' : ''}`}
-              onClick={() => updateFormData('ugcFollowed', 'Yes')}
-            >
-              <input
-                type="radio"
-                name="ugc_followed"
-                value="Yes"
-                checked={formData.ugcFollowed === 'Yes'}
-                onChange={() => updateFormData('ugcFollowed', 'Yes')}
-              />
-              <label>Yes</label>
-            </div>
-            <div
-              className={`radio-option ${formData.ugcFollowed === 'No' ? 'selected' : ''}`}
-              onClick={() => updateFormData('ugcFollowed', 'No')}
-            >
-              <input
-                type="radio"
-                name="ugc_followed"
-                value="No"
-                checked={formData.ugcFollowed === 'No'}
-                onChange={() => updateFormData('ugcFollowed', 'No')}
-              />
-              <label>No</label>
-            </div>
-          </div>
-          {errors.ugcFollowed && <span className="validation-message">{errors.ugcFollowed}</span>}
-        </div>
-
-        <div className="form-group">
-          <label className="label">Number of UG programmes aligned to UGC CCFUGP</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.ugProgramsNumber}
-            onChange={(e) => updateFormData('ugProgramsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.ugProgramsNumber) > 0 && (
-          <div className="form-group">
-            <label className="label">Percentage of UG programmes aligned to UGC CCFUGP</label>
-            <input
-              type="number"
-              className="input"
-              value={formData.ugProgramsPercentage}
-              onChange={(e) => updateFormData('ugProgramsPercentage', e.target.value)}
-              min="0"
-              max="100"
-              step="0.01"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-// Regulating Councils
-case 2:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of UG programmes aligned to Regulating Councils</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.regulatingCouncilsNumber}
-            onChange={(e) => updateFormData('regulatingCouncilsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.regulatingCouncilsNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage aligned to Regulating Councils</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.regulatingCouncilsPercentage}
-                onChange={(e) => updateFormData('regulatingCouncilsPercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">Names of Regulating Councils</label>
-              <textarea
-                className="textarea"
-                value={formData.regulatingCouncilsNames}
-                onChange={(e) => updateFormData('regulatingCouncilsNames', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-// Non-Aligned Programs
-case 3:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of programmes neither CCFUGP nor Council</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.ccfugpProgramsNumber}
-            onChange={(e) => updateFormData('ccfugpProgramsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.ccfugpProgramsNumber) > 0 && (
-          <div className="form-group">
-            <label className="label">Percentage of programmes neither CCFUGP nor Council</label>
-            <input
-              type="number"
-              className="input"
-              value={formData.ccfugpProgramsPercentage}
-              onChange={(e) => updateFormData('ccfugpProgramsPercentage', e.target.value)}
-              min="0"
-              max="100"
-              step="0.01"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-// Bachelor Degree Programs
-case 4:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of 3-year bachelor Degree programmes (non-B.VOC)</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.bachelorDegreeNumber}
-            onChange={(e) => updateFormData('bachelorDegreeNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.bachelorDegreeNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage of 3-year bachelor Degree programmes (non-B.VOC)</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.bachelorDegreePercentage}
-                onChange={(e) => updateFormData('bachelorDegreePercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">List of 3-year bachelor Degree programmes (non-B.VOC)</label>
-              <textarea
-                className="textarea"
-                value={formData.bachelorDegreeList}
-                onChange={(e) => updateFormData('bachelorDegreeList', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-// B.VOC Programs
-case 5:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of B.VOC programmes</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.bVocNumber}
-            onChange={(e) => updateFormData('bVocNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.bVocNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage of B.VOC programmes</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.bVocPercentage}
-                onChange={(e) => updateFormData('bVocPercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">List of B.VOC programmes</label>
-              <textarea
-                className="textarea"
-                value={formData.bVocList}
-                onChange={(e) => updateFormData('bVocList', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-      case 6: // Review & Submit
-        return (
-          <div className="form-section">
-            <h2 className="section-title">{section.title}</h2>
-            <p className="section-description">{section.description}</p>
-            
-            {submitted ? (
-              <div className="success-message">
-                ✅ Form submitted successfully! Thank you for your submission.
-                <br />
-                <small>Form will reset automatically in 5 seconds...</small>
-              </div>
-            ) : (
-              <div className="summary-grid">
-                <div className="summary-card">
-                  <h4>Institution Details</h4>
-                  <p><strong>Institution:</strong> {formData.college || 'Not selected'}</p>
-                  <p><strong>Total Programs:</strong> {formData.totalPrograms || 'N/A'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>UGC CCFUGP</h4>
-                  <p><strong>UGC Followed:</strong> {formData.ugcFollowed || 'Not specified'}</p>
-                  <p><strong>UG Programs:</strong> {formData.ugProgramsNumber || 0} ({formData.ugProgramsPercentage || 0}%)</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Regulating Councils</h4>
-                  <p><strong>Programs:</strong> {formData.regulatingCouncilsNumber || 0} ({formData.regulatingCouncilsPercentage || 0}%)</p>
-                  <p><strong>Councils:</strong> {formData.regulatingCouncilsNames || 'Not specified'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Non-Aligned Programs</h4>
-                  <p><strong>Programs:</strong> {formData.ccfugpProgramsNumber || 0} ({formData.ccfugpProgramsPercentage || 0}%)</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Bachelor Degree Programs</h4>
-                  <p><strong>Programs:</strong> {formData.bachelorDegreeNumber || 0} ({formData.bachelorDegreePercentage || 0}%)</p>
-                  <p><strong>List:</strong> {formData.bachelorDegreeList || 'Not specified'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>B.VOC Programs</h4>
-                  <p><strong>Programs:</strong> {formData.bVocNumber || 0} ({formData.bVocPercentage || 0}%)</p>
-                  <p><strong>List:</strong> {formData.bVocList || 'Not specified'}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
-      default:
-        return <div>Section not found</div>;
+      case 0: return renderOverallExitEntryData();
+      case 1: return renderReview();
+      case 2: return renderSubmit();
+      default: return <div>Section not found</div>;
     }
   };
 
+  // ====================================
+  // COMPONENT RETURN
+  // ====================================
   const progressPercentage = ((currentSection + 1) / sections.length) * 100;
 
   return (
     <div className="container">
-     <FormHeader />
-     <PageNavigationSubheader totalPages={21}/>
+      <FormHeader 
+        onSignIn={() => { /* TODO: implement sign in logic */ }} 
+        onSignUp={() => { /* TODO: implement sign up logic */ }} 
+      />
+      <PageNavigationSubheader totalPages={21}/>
 
-    <Page14 
-      progressPercentage={progressPercentage}
-      sections={sections}
-      currentSection={currentSection}
-      completedSections={completedSections}
-      handleSectionClick={handleSectionClick}
-      handleSubmit={handleSubmit}
-      handlePrevious={handlePrevious}
-      handleNext={handleNext}
-      resetForm={resetForm}
-      submitted={submitted}
-      renderSection={renderSection}
-    />
+      <Page14
+        progressPercentage={progressPercentage}
+        sections={sections}
+        currentSection={currentSection}
+        completedSections={completedSections}
+        handleSectionClick={handleSectionClick}
+        handleSubmit={handleSubmit}
+        handlePrevious={handlePrevious}
+        handleNext={currentSection === sections.length - 1 && submitted ? handleNavigateToNextForm : handleNext}
+        resetForm={resetForm}
+        submitted={submitted}
+        renderSection={renderSection}
+        isLastSection={currentSection === sections.length - 1}
+      />
     </div>
   );
 };
 
-export default CollegeProgramForm14;
+export default OverallExitEntryForm;

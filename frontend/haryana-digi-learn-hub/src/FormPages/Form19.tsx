@@ -1,50 +1,40 @@
-// CollegeProgramForm5.tsx
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import './Form19.css';
+import React, { useState, FormEvent, useEffect } from 'react';
+import './Form1.css';
 import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
-import FormPage from '../components/FormPage';
 import Page19 from '../pages/Page19';
 
-// Type definitions
+// ====================================
+// TYPE DEFINITIONS
+// ====================================
+interface MoUDetail {
+  id: string;
+  name: string;
+}
+
+interface ExchangeDetail {
+  id: string;
+  nameOurSide: string;
+  detailsOurSide: string;
+  nameOtherSide: string;
+  detailsOtherSide: string;
+}
+
 interface FormData {
-  college: string;
-  totalPrograms: string | number;
-  ugcFollowed: string;
-  ugProgramsNumber: string | number;
-  ugProgramsPercentage: string | number;
-  regulatingCouncilsNumber: string | number;
-  regulatingCouncilsNames: string;
-  regulatingCouncilsPercentage: string | number;
-  ccfugpProgramsNumber: string | number;
-  ccfugpProgramsPercentage: string | number;
-  bachelorDegreeNumber: string | number;
-  bachelorDegreeList: string;
-  bachelorDegreePercentage: string | number;
-  bVocNumber: string | number;
-  bVocList: string;
-  bVocPercentage: string | number;
-}
-
-interface CollegeInfo {
-  programs: number;
-  ugcFollowed: string;
-  ugProgramsNumber: number;
-  ugProgramsPercentage: number;
-  regulatingCouncilsNumber: number;
-  regulatingCouncilsPercentage: number;
-  bachelorDegreeNumber: number;
-  bachelorDegreePercentage: number;
-  bVocNumber: number;
-  bVocPercentage: number;
-}
-
-interface CollegeData {
-  [key: string]: CollegeInfo;
-}
-
-interface FormErrors {
-  [key: string]: string;
+  // Section 1: Research MoUs
+  researchMoUsNumber: string | number;
+  researchMoUsList: MoUDetail[];
+  activeResearchMoUsNumber: string | number;
+  activeResearchMoUsList: MoUDetail[];
+  inactiveMoUsNumber: string | number;
+  inactiveMoUsList: MoUDetail[];
+  
+  // Section 2: Exchanges and Projects
+  facultyExchanges: ExchangeDetail[];
+  labFacilityMoUs: ExchangeDetail[];
+  interdisciplinaryCentres: MoUDetail[];
+  ongoingInterdisciplinaryNumber: string | number;
+  ongoingInterdisciplinaryList: MoUDetail[];
 }
 
 interface Section {
@@ -54,165 +44,506 @@ interface Section {
   fields: string[];
 }
 
-const CollegeProgramForm19: React.FC = () => {
+// ====================================
+// MAIN COMPONENT
+// ====================================
+const ResearchMoUsForm: React.FC = () => {
   const [currentSection, setCurrentSection] = useState<number>(0);
   const [completedSections, setCompletedSections] = useState<Set<number>>(new Set());
-  const [formData, setFormData] = useState<FormData>({
-    college: '',
-    totalPrograms: '',
-    ugcFollowed: '',
-    ugProgramsNumber: '',
-    ugProgramsPercentage: '',
-    regulatingCouncilsNumber: '',
-    regulatingCouncilsNames: '',
-    regulatingCouncilsPercentage: '',
-    ccfugpProgramsNumber: '',
-    ccfugpProgramsPercentage: '',
-    bachelorDegreeNumber: '',
-    bachelorDegreeList: '',
-    bachelorDegreePercentage: '',
-    bVocNumber: '',
-    bVocList: '',
-    bVocPercentage: ''
-  });
-
   const [submitted, setSubmitted] = useState<boolean>(false);
-  const [errors, setErrors] = useState<FormErrors>({});
+  
+  const [formData, setFormData] = useState<FormData>({
+    researchMoUsNumber: 0,
+    researchMoUsList: [],
+    activeResearchMoUsNumber: 0,
+    activeResearchMoUsList: [],
+    inactiveMoUsNumber: 0,
+    inactiveMoUsList: [],
+    facultyExchanges: [],
+    labFacilityMoUs: [],
+    interdisciplinaryCentres: [],
+    ongoingInterdisciplinaryNumber: 0,
+    ongoingInterdisciplinaryList: [],
+  });
 
   // Define sections
   const sections: Section[] = [
-    {
-      id: 0,
-      title: "Institution Selection",
-      description: "Select your institution and view program overview",
-      fields: ['college', 'totalPrograms']
-    },
-    {
-      id: 1,
-      title: "UGC CCFUGP Information", 
-      description: "Provide details about UGC CCFUGP alignment",
-      fields: ['ugcFollowed', 'ugProgramsNumber', 'ugProgramsPercentage']
-    },
-    {
-      id: 2,
-      title: "Regulating Councils",
-      description: "Information about regulating council alignments", 
-      fields: ['regulatingCouncilsNumber', 'regulatingCouncilsNames', 'regulatingCouncilsPercentage']
-    },
-    {
-      id: 3,
-      title: "Non-Aligned Programs",
-      description: "Programs not aligned to CCFUGP or councils",
-      fields: ['ccfugpProgramsNumber', 'ccfugpProgramsPercentage']
-    },
-    {
-      id: 4,
-      title: "Bachelor Degree Programs", 
-      description: "3-year bachelor degree program details",
-      fields: ['bachelorDegreeNumber', 'bachelorDegreeList', 'bachelorDegreePercentage']
-    },
-    {
-      id: 5,
-      title: "B.VOC Programs",
-      description: "Bachelor of Vocation program information", 
-      fields: ['bVocNumber', 'bVocList', 'bVocPercentage']
-    },
-    {
-      id: 6,
-      title: "Review & Submit",
-      description: "Review all information before submission",
-      fields: []
-    }
+    { id: 0, title: "Research MoUs", description: "MoUs related to research activities", fields: [] },
+    { id: 1, title: "Exchanges & Collaborations", description: "Faculty exchanges, facility usage, and interdisciplinary projects", fields: [] },
+    { id: 2, title: "Review", description: "Review all information before submission", fields: [] },
+    { id: 3, title: "Submit", description: "Final submission", fields: [] }
   ];
 
-  // College data from CSV
-  const collegeData: CollegeData = {
-    'JCBUST': {
-      programs: 20, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 2,
-      ugProgramsPercentage: 10,
-      regulatingCouncilsNumber: 10,
-      regulatingCouncilsPercentage: 50,
-      bachelorDegreeNumber: 3,
-      bachelorDegreePercentage: 15,
-      bVocNumber: 5,
-      bVocPercentage: 25
-    },
-    'GJU': { 
-      programs: 10, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 3,
-      ugProgramsPercentage: 30,
-      regulatingCouncilsNumber: 5,
-      regulatingCouncilsPercentage: 50,
-      bachelorDegreeNumber: 0,
-      bachelorDegreePercentage: 0,
-      bVocNumber: 1,
-      bVocPercentage: 10
-    },
-    'Manav Rachna': { 
-      programs: 15, 
-      ugcFollowed: 'No',
-      ugProgramsNumber: 0,
-      ugProgramsPercentage: 0,
-      regulatingCouncilsNumber: 10,
-      regulatingCouncilsPercentage: 66.6666667,
-      bachelorDegreeNumber: 2,
-      bachelorDegreePercentage: 13.3333333,
-      bVocNumber: 1,
-      bVocPercentage: 6.6666667
-    },
-    'DCRUST': { 
-      programs: 25, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 6,
-      ugProgramsPercentage: 24,
-      regulatingCouncilsNumber: 12,
-      regulatingCouncilsPercentage: 48,
-      bachelorDegreeNumber: 0,
-      bachelorDegreePercentage: 0,
-      bVocNumber: 3,
-      bVocPercentage: 12
-    }
-  };
-
-  const updateFormData = (field: keyof FormData, value: string | number): void => {
+  // ====================================
+  // UTILITY FUNCTIONS
+  // ====================================
+  const updateFormData = (field: keyof FormData, value: any): void => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
   };
 
-  const validateSection = (sectionId: number): boolean => {
-    const newErrors: FormErrors = {};
-
-    // Validation for each section
-    switch (sectionId) {
-      case 0: // Institution Selection
-        if (!formData.college) {
-          newErrors.college = 'Please select an institution';
-        }
-        break;
-      case 1: // UGC CCFUGP
-        if (!formData.ugcFollowed) {
-          newErrors.ugcFollowed = 'Please select if UGC CCFUGP is followed';
-        }
-        break;
-      // Add more validations as needed
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const generateId = (): string => {
+    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
+  // Function to get the maximum allowed entries for a list field
+  const getMaxEntries = (numberField: keyof FormData): number => {
+    return Number(formData[numberField]) || 0;
+  };
+
+  // Function to check if more entries can be added
+  const canAddMoreEntries = (listField: keyof FormData, numberField: keyof FormData): boolean => {
+    const currentList = formData[listField] as (MoUDetail[] | ExchangeDetail[]);
+    const maxEntries = getMaxEntries(numberField);
+    return currentList.length < maxEntries;
+  };
+
+  // Functions for MoU details
+  const addMoUDetail = (listField: keyof FormData, numberField?: keyof FormData): void => {
+    if (numberField && !canAddMoreEntries(listField, numberField)) return;
+    
+    const newMoU: MoUDetail = {
+      id: generateId(),
+      name: ''
+    };
+    const currentList = (formData[listField] as MoUDetail[]) || [];
+    updateFormData(listField, [...currentList, newMoU]);
+  };
+
+  const updateMoUDetail = (listField: keyof FormData, id: string, value: string): void => {
+    const currentList = (formData[listField] as MoUDetail[]) || [];
+    const updatedList = currentList.map(item => 
+      item.id === id ? { ...item, name: value } : item
+    );
+    updateFormData(listField, updatedList);
+  };
+
+  const removeMoUDetail = (listField: keyof FormData, id: string): void => {
+    const currentList = (formData[listField] as MoUDetail[]) || [];
+    updateFormData(listField, currentList.filter(item => item.id !== id));
+  };
+
+  // Functions for exchange details
+  const addExchangeDetail = (listField: keyof FormData): void => {
+    const newExchange: ExchangeDetail = {
+      id: generateId(),
+      nameOurSide: '',
+      detailsOurSide: '',
+      nameOtherSide: '',
+      detailsOtherSide: ''
+    };
+    const currentList = (formData[listField] as ExchangeDetail[]) || [];
+    updateFormData(listField, [...currentList, newExchange]);
+  };
+
+  const updateExchangeDetail = (listField: keyof FormData, id: string, field: string, value: string): void => {
+    const currentList = (formData[listField] as ExchangeDetail[]) || [];
+    const updatedList = currentList.map(item => 
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    updateFormData(listField, updatedList);
+  };
+
+  const removeExchangeDetail = (listField: keyof FormData, id: string): void => {
+    const currentList = (formData[listField] as ExchangeDetail[]) || [];
+    updateFormData(listField, currentList.filter(item => item.id !== id));
+  };
+
+  // Component for rendering number input
+  const renderNumberInput = (
+    label: string,
+    field: keyof FormData,
+    required = false
+  ): JSX.Element => {
+    return (
+      <div className="form-group form-group-full">
+        <label className="label">
+          {label} {required && <span className="required">*</span>}
+        </label>
+        <input
+          type="number"
+          className="input"
+          value={typeof formData[field] === 'string' || typeof formData[field] === 'number' ? formData[field] : ''}
+          onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : e.target.value)}
+          min="0"
+        />
+      </div>
+    );
+  };
+
+  // Component for rendering MoU list with constraints
+  const renderMoUList = (
+    label: string,
+    listField: keyof FormData,
+    numberField?: keyof FormData
+  ): JSX.Element => {
+    const mous = (formData[listField] as MoUDetail[]) || [];
+    const maxEntries = numberField ? getMaxEntries(numberField) : undefined;
+    const canAddMore = numberField ? canAddMoreEntries(listField, numberField) : true;
+    
+    return (
+      <div className="form-group form-group-full">
+        <label className="label">
+          {label}
+          {numberField && (
+            <span style={{ fontSize: '0.9rem', color: '#6c757d', marginLeft: '10px' }}>
+              ({mous.length}/{maxEntries} entries)
+            </span>
+          )}
+        </label>
+        
+        {!numberField || maxEntries! > 0 ? (
+          <div style={{ marginTop: '10px' }}>
+            {/* Input Area */}
+            <div style={{ marginBottom: '20px' }}>
+              {mous.map((mou, index) => (
+                <div key={mou.id} style={{ marginBottom: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <span style={{ minWidth: '30px', color: '#6c757d' }}>{index + 1}.</span>
+                  <input
+                    type="text"
+                    className="input"
+                    value={mou.name}
+                    onChange={(e) => updateMoUDetail(listField, mou.id, e.target.value)}
+                    placeholder="Enter MoU name/organization"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeMoUDetail(listField, mou.id)}
+                    className="btn btn-secondary"
+                    style={{ padding: '8px 15px', fontSize: '0.9rem' }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              
+              {(!numberField || canAddMore) ? (
+                <button
+                  type="button"
+                  onClick={() => addMoUDetail(listField, numberField)}
+                  className="btn btn-primary"
+                  style={{ marginTop: '10px' }}
+                >
+                  Add MoU {numberField && `(${mous.length}/${maxEntries})`}
+                </button>
+              ) : (
+                <div style={{ 
+                  marginTop: '10px', 
+                  padding: '8px 12px', 
+                  backgroundColor: '#fff3cd', 
+                  border: '1px solid #ffeaa7', 
+                  borderRadius: '4px',
+                  fontSize: '0.9rem',
+                  color: '#856404'
+                }}>
+                  Maximum {maxEntries} entries reached. Remove an entry to add a new one.
+                </div>
+              )}
+            </div>
+
+            {/* List View */}
+            {mous.length > 0 && (
+              <div style={{ 
+                marginTop: '20px', 
+                padding: '15px', 
+                backgroundColor: '#f8f9fa', 
+                border: '1px solid #dee2e6', 
+                borderRadius: '6px' 
+              }}>
+                <h5 style={{ margin: '0 0 10px 0', color: '#495057', fontSize: '1rem' }}>
+                  🤝 Current MoUs ({mous.length})
+                </h5>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {mous.map((mou, index) => (
+                    <div key={mou.id} style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      padding: '8px 12px', 
+                      backgroundColor: '#ffffff', 
+                      border: '1px solid #e9ecef', 
+                      borderRadius: '4px',
+                      fontSize: '0.9rem'
+                    }}>
+                      <span style={{ 
+                        minWidth: '25px', 
+                        color: '#6c757d', 
+                        fontWeight: 'bold' 
+                      }}>
+                        {index + 1}.
+                      </span>
+                      <span style={{ flex: 1, color: '#495057' }}>
+                        {mou.name || <em style={{ color: '#6c757d' }}>No name entered</em>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ 
+            marginTop: '10px',
+            padding: '12px', 
+            backgroundColor: '#f8f9fa', 
+            border: '1px solid #dee2e6', 
+            borderRadius: '4px',
+            fontSize: '0.9rem',
+            color: '#6c757d'
+          }}>
+            Please enter a number greater than 0 in the corresponding number field to add entries.
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Component for rendering exchange list with TABLE VIEW
+  const renderExchangeTable = (
+    label: string,
+    listField: keyof FormData
+  ): JSX.Element => {
+    const exchanges = (formData[listField] as ExchangeDetail[]) || [];
+    
+    return (
+      <div className="form-group form-group-full">
+        <label className="label">
+          {label}
+          <span style={{ fontSize: '0.9rem', color: '#6c757d', marginLeft: '10px' }}>
+            ({exchanges.length} entries)
+          </span>
+        </label>
+        
+        <div style={{ marginTop: '10px' }}>
+          {/* Add Exchange Button */}
+          <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => addExchangeDetail(listField)}
+              className="btn btn-primary"
+              style={{ padding: '10px 25px', fontSize: '1rem' }}
+            >
+              Add Exchange/Collaboration ({exchanges.length})
+            </button>
+          </div>
+
+          {/* Table View */}
+          {exchanges.length > 0 && (
+            <div style={{ 
+              border: '1px solid #dee2e6', 
+              borderRadius: '8px', 
+              overflow: 'hidden',
+              backgroundColor: '#ffffff' 
+            }}>
+              <div style={{ 
+                backgroundColor: '#f8f9fa', 
+                padding: '12px 15px', 
+                borderBottom: '1px solid #dee2e6',
+                fontWeight: 'bold',
+                color: '#495057'
+              }}>
+                🔄 Exchange/Collaboration Table ({exchanges.length} entries)
+              </div>
+              
+              {/* Desktop Table View */}
+              <div style={{ display: 'block' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ 
+                    width: '100%', 
+                    borderCollapse: 'collapse',
+                    fontSize: '0.9rem'
+                  }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f1f3f4' }}>
+                        <th style={{ 
+                          padding: '12px 8px', 
+                          textAlign: 'left', 
+                          borderBottom: '2px solid #dee2e6',
+                          fontWeight: 'bold',
+                          color: '#495057',
+                          minWidth: '40px'
+                        }}>
+                          #
+                        </th>
+                        <th style={{ 
+                          padding: '12px 8px', 
+                          textAlign: 'left', 
+                          borderBottom: '2px solid #dee2e6',
+                          fontWeight: 'bold',
+                          color: '#495057',
+                          minWidth: '150px'
+                        }}>
+                          Our Institution - Name
+                        </th>
+                        <th style={{ 
+                          padding: '12px 8px', 
+                          textAlign: 'left', 
+                          borderBottom: '2px solid #dee2e6',
+                          fontWeight: 'bold',
+                          color: '#495057',
+                          minWidth: '200px'
+                        }}>
+                          Our Institution - Details
+                        </th>
+                        <th style={{ 
+                          padding: '12px 8px', 
+                          textAlign: 'left', 
+                          borderBottom: '2px solid #dee2e6',
+                          fontWeight: 'bold',
+                          color: '#495057',
+                          minWidth: '150px'
+                        }}>
+                          Partner Institution - Name
+                        </th>
+                        <th style={{ 
+                          padding: '12px 8px', 
+                          textAlign: 'left', 
+                          borderBottom: '2px solid #dee2e6',
+                          fontWeight: 'bold',
+                          color: '#495057',
+                          minWidth: '200px'
+                        }}>
+                          Partner Institution - Details
+                        </th>
+                        <th style={{ 
+                          padding: '12px 8px', 
+                          textAlign: 'center', 
+                          borderBottom: '2px solid #dee2e6',
+                          fontWeight: 'bold',
+                          color: '#495057',
+                          minWidth: '80px'
+                        }}>
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {exchanges.map((exchange, index) => (
+                        <tr key={exchange.id} style={{ 
+                          borderBottom: '1px solid #e9ecef'
+                        }}>
+                          <td style={{ 
+                            padding: '12px 8px', 
+                            fontWeight: 'bold',
+                            color: '#6c757d',
+                            textAlign: 'center'
+                          }}>
+                            {index + 1}
+                          </td>
+                          <td style={{ padding: '8px' }}>
+                            <input
+                              type="text"
+                              value={exchange.nameOurSide}
+                              onChange={(e) => updateExchangeDetail(listField, exchange.id, 'nameOurSide', e.target.value)}
+                              placeholder="Faculty/researcher name"
+                              style={{
+                                width: '100%',
+                                padding: '6px 8px',
+                                border: '1px solid #ced4da',
+                                borderRadius: '4px',
+                                fontSize: '0.9rem'
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px' }}>
+                            <textarea
+                              value={exchange.detailsOurSide}
+                              onChange={(e) => updateExchangeDetail(listField, exchange.id, 'detailsOurSide', e.target.value)}
+                              placeholder="Enter details"
+                              style={{
+                                width: '100%',
+                                padding: '6px 8px',
+                                border: '1px solid #ced4da',
+                                borderRadius: '4px',
+                                fontSize: '0.9rem',
+                                resize: 'vertical',
+                                minHeight: '60px'
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px' }}>
+                            <input
+                              type="text"
+                              value={exchange.nameOtherSide}
+                              onChange={(e) => updateExchangeDetail(listField, exchange.id, 'nameOtherSide', e.target.value)}
+                              placeholder="Faculty/researcher name"
+                              style={{
+                                width: '100%',
+                                padding: '6px 8px',
+                                border: '1px solid #ced4da',
+                                borderRadius: '4px',
+                                fontSize: '0.9rem'
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px' }}>
+                            <textarea
+                              value={exchange.detailsOtherSide}
+                              onChange={(e) => updateExchangeDetail(listField, exchange.id, 'detailsOtherSide', e.target.value)}
+                              placeholder="Enter details"
+                              style={{
+                                width: '100%',
+                                padding: '6px 8px',
+                                border: '1px solid #ced4da',
+                                borderRadius: '4px',
+                                fontSize: '0.9rem',
+                                resize: 'vertical',
+                                minHeight: '60px'
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px', textAlign: 'center' }}>
+                            <button
+                              type="button"
+                              onClick={() => removeExchangeDetail(listField, exchange.id)}
+                              style={{
+                                padding: '6px 12px',
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {exchanges.length === 0 && (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '40px 20px',
+              backgroundColor: '#f8f9fa',
+              border: '2px dashed #dee2e6',
+              borderRadius: '8px',
+              color: '#6c757d'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🔄</div>
+              <p style={{ margin: 0, fontSize: '1rem' }}>No exchanges/collaborations added yet</p>
+              <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem' }}>Click "Add Exchange/Collaboration" to get started</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ====================================
+  // EVENT HANDLERS
+  // ====================================
   const handleNext = (): void => {
-    if (validateSection(currentSection)) {
-      setCompletedSections(prev => new Set([...prev, currentSection]));
-      if (currentSection < sections.length - 1) {
-        setCurrentSection(prev => prev + 1);
-      }
+    setCompletedSections(prev => new Set([...prev, currentSection]));
+    if (currentSection < sections.length - 1) {
+      setCurrentSection(prev => prev + 1);
     }
   };
 
@@ -223,445 +554,286 @@ const CollegeProgramForm19: React.FC = () => {
   };
 
   const handleSectionClick = (sectionId: number): void => {
-    // Allow navigation to completed sections or the next incomplete section
     const maxAllowedSection = Math.max(...Array.from(completedSections), -1) + 1;
     if (sectionId <= maxAllowedSection) {
       setCurrentSection(sectionId);
     }
   };
 
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    console.log('Research MoUs Form submitted:', formData);
+    setSubmitted(true);
+    
+    setTimeout(() => {
+      window.location.href = '/form/page20';
+    }, 2000);
+  };
+
+  const handleNavigateToNextForm = (): void => {
+    window.location.href = '/form/page20';
+  };
+
   const resetForm = (): void => {
     setFormData({
-      college: '',
-      totalPrograms: '',
-      ugcFollowed: '',
-      ugProgramsNumber: '',
-      ugProgramsPercentage: '',
-      regulatingCouncilsNumber: '',
-      regulatingCouncilsNames: '',
-      regulatingCouncilsPercentage: '',
-      ccfugpProgramsNumber: '',
-      ccfugpProgramsPercentage: '',
-      bachelorDegreeNumber: '',
-      bachelorDegreeList: '',
-      bachelorDegreePercentage: '',
-      bVocNumber: '',
-      bVocList: '',
-      bVocPercentage: ''
+      researchMoUsNumber: 0,
+      researchMoUsList: [],
+      activeResearchMoUsNumber: 0,
+      activeResearchMoUsList: [],
+      inactiveMoUsNumber: 0,
+      inactiveMoUsList: [],
+      facultyExchanges: [],
+      labFacilityMoUs: [],
+      interdisciplinaryCentres: [],
+      ongoingInterdisciplinaryNumber: 0,
+      ongoingInterdisciplinaryList: [],
     });
-    setErrors({});
     setSubmitted(false);
     setCurrentSection(0);
     setCompletedSections(new Set());
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    setSubmitted(true);
-    
-    // Reset form after 5 seconds
-    setTimeout(() => {
-      resetForm();
-    }, 5000);
-  };
-
-  // Auto-populate fields when college is selected
+  // ====================================
+  // EFFECTS
+  // ====================================
+  // Effects to handle list trimming when numbers are reduced
   useEffect(() => {
-    if (formData.college && collegeData[formData.college]) {
-      const data: CollegeInfo = collegeData[formData.college];
-      setFormData(prev => ({
-        ...prev,
-        totalPrograms: data.programs,
-        ugcFollowed: data.ugcFollowed,
-        ugProgramsNumber: data.ugProgramsNumber,
-        ugProgramsPercentage: data.ugProgramsPercentage,
-        regulatingCouncilsNumber: data.regulatingCouncilsNumber,
-        regulatingCouncilsPercentage: data.regulatingCouncilsPercentage,
-        bachelorDegreeNumber: data.bachelorDegreeNumber,
-        bachelorDegreePercentage: data.bachelorDegreePercentage,
-        bVocNumber: data.bVocNumber,
-        bVocPercentage: data.bVocPercentage
-      }));
-    }
-  }, [formData.college]);
+    const fieldsToCheck = [
+      { numberField: 'researchMoUsNumber', listField: 'researchMoUsList' },
+      { numberField: 'activeResearchMoUsNumber', listField: 'activeResearchMoUsList' },
+      { numberField: 'inactiveMoUsNumber', listField: 'inactiveMoUsList' },
+      { numberField: 'ongoingInterdisciplinaryNumber', listField: 'ongoingInterdisciplinaryList' },
+    ];
 
+    fieldsToCheck.forEach(({ numberField, listField }) => {
+      const maxEntries = Number(formData[numberField as keyof FormData]) || 0;
+      const currentList = formData[listField as keyof FormData] as MoUDetail[];
+      if (currentList.length > maxEntries) {
+        updateFormData(listField as keyof FormData, currentList.slice(0, maxEntries));
+      }
+    });
+  }, [
+    formData.researchMoUsNumber, formData.activeResearchMoUsNumber, 
+    formData.inactiveMoUsNumber, formData.ongoingInterdisciplinaryNumber
+  ]);
+
+  // ====================================
+  // SECTION RENDERERS
+  // ====================================
+  
+  // SECTION 0: RESEARCH MoUs
+  const renderResearchMoUs = (): JSX.Element => (
+    <div className="form-section">
+      <h2 className="section-title">Research MoUs</h2>
+      <p className="section-description">MoUs related to research activities</p>
+
+      <div className="form-grid">
+        {renderNumberInput('MoUs related to research - Number', 'researchMoUsNumber')}
+        {renderMoUList('MoUs related to research - List', 'researchMoUsList', 'researchMoUsNumber')}
+        
+        {renderNumberInput('Active research MoUs - Number', 'activeResearchMoUsNumber')}
+        {renderMoUList('Active research MoUs - List', 'activeResearchMoUsList', 'activeResearchMoUsNumber')}
+        
+        {renderNumberInput('Signed research MoUs with no activity in last 2 years - Number', 'inactiveMoUsNumber')}
+        {renderMoUList('Signed research MoUs with no activity in last 2 years - List', 'inactiveMoUsList', 'inactiveMoUsNumber')}
+      </div>
+    </div>
+  );
+
+  // SECTION 1: EXCHANGES & COLLABORATIONS
+  const renderExchangesCollaborations = (): JSX.Element => (
+    <div className="form-section">
+      <h2 className="section-title">Exchanges & Collaborations</h2>
+      <p className="section-description">Faculty exchanges, facility usage, and interdisciplinary projects</p>
+
+      <div className="form-grid">
+        {renderExchangeTable(
+          'Faculty/Researcher exchanges under research MoUs - Names & details (both sides)',
+          'facultyExchanges'
+        )}
+        
+        {renderExchangeTable(
+          'MoUs with lab/expert facility usage - Names & details (both sides)',
+          'labFacilityMoUs'
+        )}
+        
+        {renderMoUList('Interdisciplinary research centres established - List', 'interdisciplinaryCentres')}
+        
+        {renderNumberInput('On-going interdisciplinary research projects - Number', 'ongoingInterdisciplinaryNumber')}
+        {renderMoUList('On-going interdisciplinary research projects - List', 'ongoingInterdisciplinaryList', 'ongoingInterdisciplinaryNumber')}
+      </div>
+    </div>
+  );
+
+  // SECTION 2: REVIEW
+  const renderReview = (): JSX.Element => {
+    const activityRate = Number(formData.researchMoUsNumber) > 0 
+      ? ((Number(formData.activeResearchMoUsNumber) / Number(formData.researchMoUsNumber)) * 100).toFixed(1)
+      : '0';
+    
+    return (
+      <div className="form-section">
+        <h2 className="section-title">Review</h2>
+        <p className="section-description">Review all information before submission</p>
+        
+        <div className="summary-grid">
+          <div className="summary-card">
+            <h4>Research MoUs Overview</h4>
+            <p><strong>Total Research MoUs:</strong> {formData.researchMoUsNumber || 0} ({formData.researchMoUsList.length} listed)</p>
+            <p><strong>Active MoUs:</strong> {formData.activeResearchMoUsNumber || 0} ({formData.activeResearchMoUsList.length} listed)</p>
+            <p><strong>Inactive (2+ years):</strong> {formData.inactiveMoUsNumber || 0} ({formData.inactiveMoUsList.length} listed)</p>
+            <p><strong>Activity Rate:</strong> {activityRate}%</p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Faculty Exchanges</h4>
+            <p><strong>Total Exchanges:</strong> {formData.facultyExchanges.length}</p>
+            <p><strong>Our Faculty:</strong> {formData.facultyExchanges.filter(e => e.nameOurSide).length}</p>
+            <p><strong>Partner Faculty:</strong> {formData.facultyExchanges.filter(e => e.nameOtherSide).length}</p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Lab/Facility Usage</h4>
+            <p><strong>Total Collaborations:</strong> {formData.labFacilityMoUs.length}</p>
+            <p><strong>Our Resources:</strong> {formData.labFacilityMoUs.filter(e => e.nameOurSide).length}</p>
+            <p><strong>Partner Resources:</strong> {formData.labFacilityMoUs.filter(e => e.nameOtherSide).length}</p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Interdisciplinary Research</h4>
+            <p><strong>Research Centres:</strong> {formData.interdisciplinaryCentres.length}</p>
+            <p><strong>Ongoing Projects:</strong> {formData.ongoingInterdisciplinaryNumber || 0} ({formData.ongoingInterdisciplinaryList.length} listed)</p>
+          </div>
+
+          <div className="summary-card">
+            <h4>Collaboration Summary</h4>
+            <p><strong>Total Exchanges:</strong> {formData.facultyExchanges.length + formData.labFacilityMoUs.length}</p>
+            <p><strong>Total Active Collaborations:</strong> {
+              Number(formData.activeResearchMoUsNumber || 0) + 
+              formData.facultyExchanges.length + 
+              formData.labFacilityMoUs.length
+            }</p>
+          </div>
+
+          <div className="summary-card">
+            <h4>MoU Status Distribution</h4>
+            <p><strong>Active vs Total:</strong> {formData.activeResearchMoUsNumber || 0} / {formData.researchMoUsNumber || 0}</p>
+            <p><strong>Utilization Rate:</strong> {activityRate}%</p>
+            <div style={{ 
+              marginTop: '10px', 
+              padding: '10px', 
+              backgroundColor: Number(activityRate) >= 70 ? '#d4edda' : Number(activityRate) >= 40 ? '#fff3cd' : '#f8d7da',
+              borderRadius: '6px',
+              border: `1px solid ${Number(activityRate) >= 70 ? '#c3e6cb' : Number(activityRate) >= 40 ? '#ffeaa7' : '#f5c6cb'}`
+            }}>
+              <p style={{ 
+                margin: 0, 
+                fontSize: '0.9rem', 
+                color: Number(activityRate) >= 70 ? '#155724' : Number(activityRate) >= 40 ? '#856404' : '#721c24',
+                fontWeight: '500'
+              }}>
+                {Number(activityRate) >= 70 
+                  ? 'Excellent MoU utilization'
+                  : Number(activityRate) >= 40
+                  ? 'Moderate MoU utilization'
+                  : 'Low MoU utilization - consider review'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: '30px', textAlign: 'center' }}>
+          <p style={{ fontSize: '1.1rem', color: '#6c757d', marginBottom: '20px' }}>
+            Please review all the information above. If everything looks correct, proceed to the next step for final submission.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  // SECTION 3: SUBMIT
+  const renderSubmit = (): JSX.Element => (
+    <div className="form-section">
+      <h2 className="section-title">Submit</h2>
+      <p className="section-description">Final submission</p>
+      
+      {submitted ? (
+        <div className="success-message">
+          <div className="success-icon">✅</div>
+          <h3>Research MoUs Form Submitted Successfully!</h3>
+          <p>Thank you for your submission. Your research MoUs and collaborations data has been recorded.</p>
+          <p>Redirecting to next form...</p>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>Ready to Submit</h3>
+          <p style={{ fontSize: '1.1rem', color: '#6c757d', marginBottom: '30px', lineHeight: '1.6' }}>
+            You have reviewed all your information. Click the "Submit Form" button below to finalize your submission.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={(e) => {
+              const formEvent = { preventDefault: () => {} } as FormEvent<HTMLFormElement>;
+              handleSubmit(formEvent);
+            }}
+            style={{ 
+              padding: '15px 40px', 
+              fontSize: '1.1rem',
+              minWidth: '200px',
+              background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+              border: 'none'
+            }}
+          >
+            Submit Form
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  // ====================================
+  // MAIN RENDER FUNCTION
+  // ====================================
   const renderSection = (): JSX.Element => {
-    const section = sections[currentSection];
-
     switch (currentSection) {
-      case 0: // Institution Selection
-        return (
-          <div className="form-section">
-            <h2 className="section-title">{section.title}</h2>
-            <p className="section-description">{section.description}</p>
-            
-            <div className="form-grid">
-              <div className="form-group form-group-full">
-                <label className="label">
-                  Select Institution <span className="required">*</span>
-                </label>
-                <select
-                  className="select"
-                  value={formData.college}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => updateFormData('college', e.target.value)}
-                  required
-                >
-                  <option value="">-- Select Institution --</option>
-                  <option value="JCBUST">JCBUST</option>
-                  <option value="GJU">GJU</option>
-                  <option value="Manav Rachna">Manav Rachna</option>
-                  <option value="DCRUST">DCRUST</option>
-                </select>
-                {errors.college && <span className="validation-message">{errors.college}</span>}
-              </div>
-
-              {formData.college && (
-                <div className="card">
-                  <h3 className="card-title">{formData.totalPrograms || '0'}</h3>
-                  <p className="card-subtitle">Total Number of Programs</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-// UGC CCFUGP Information
-case 1:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group form-group-full">
-          <label className="label">
-            Is UGC CCFUGP followed? <span className="required">*</span>
-          </label>
-          <div className="radio-group">
-            <div
-              className={`radio-option ${formData.ugcFollowed === 'Yes' ? 'selected' : ''}`}
-              onClick={() => updateFormData('ugcFollowed', 'Yes')}
-            >
-              <input
-                type="radio"
-                name="ugc_followed"
-                value="Yes"
-                checked={formData.ugcFollowed === 'Yes'}
-                onChange={() => updateFormData('ugcFollowed', 'Yes')}
-              />
-              <label>Yes</label>
-            </div>
-            <div
-              className={`radio-option ${formData.ugcFollowed === 'No' ? 'selected' : ''}`}
-              onClick={() => updateFormData('ugcFollowed', 'No')}
-            >
-              <input
-                type="radio"
-                name="ugc_followed"
-                value="No"
-                checked={formData.ugcFollowed === 'No'}
-                onChange={() => updateFormData('ugcFollowed', 'No')}
-              />
-              <label>No</label>
-            </div>
-          </div>
-          {errors.ugcFollowed && <span className="validation-message">{errors.ugcFollowed}</span>}
-        </div>
-
-        <div className="form-group">
-          <label className="label">Number of UG programmes aligned to UGC CCFUGP</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.ugProgramsNumber}
-            onChange={(e) => updateFormData('ugProgramsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.ugProgramsNumber) > 0 && (
-          <div className="form-group">
-            <label className="label">Percentage of UG programmes aligned to UGC CCFUGP</label>
-            <input
-              type="number"
-              className="input"
-              value={formData.ugProgramsPercentage}
-              onChange={(e) => updateFormData('ugProgramsPercentage', e.target.value)}
-              min="0"
-              max="100"
-              step="0.01"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-// Regulating Councils
-case 2:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of UG programmes aligned to Regulating Councils</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.regulatingCouncilsNumber}
-            onChange={(e) => updateFormData('regulatingCouncilsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.regulatingCouncilsNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage aligned to Regulating Councils</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.regulatingCouncilsPercentage}
-                onChange={(e) => updateFormData('regulatingCouncilsPercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">Names of Regulating Councils</label>
-              <textarea
-                className="textarea"
-                value={formData.regulatingCouncilsNames}
-                onChange={(e) => updateFormData('regulatingCouncilsNames', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-// Non-Aligned Programs
-case 3:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of programmes neither CCFUGP nor Council</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.ccfugpProgramsNumber}
-            onChange={(e) => updateFormData('ccfugpProgramsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.ccfugpProgramsNumber) > 0 && (
-          <div className="form-group">
-            <label className="label">Percentage of programmes neither CCFUGP nor Council</label>
-            <input
-              type="number"
-              className="input"
-              value={formData.ccfugpProgramsPercentage}
-              onChange={(e) => updateFormData('ccfugpProgramsPercentage', e.target.value)}
-              min="0"
-              max="100"
-              step="0.01"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-// Bachelor Degree Programs
-case 4:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of 3-year bachelor Degree programmes (non-B.VOC)</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.bachelorDegreeNumber}
-            onChange={(e) => updateFormData('bachelorDegreeNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.bachelorDegreeNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage of 3-year bachelor Degree programmes (non-B.VOC)</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.bachelorDegreePercentage}
-                onChange={(e) => updateFormData('bachelorDegreePercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">List of 3-year bachelor Degree programmes (non-B.VOC)</label>
-              <textarea
-                className="textarea"
-                value={formData.bachelorDegreeList}
-                onChange={(e) => updateFormData('bachelorDegreeList', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-// B.VOC Programs
-case 5:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of B.VOC programmes</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.bVocNumber}
-            onChange={(e) => updateFormData('bVocNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.bVocNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage of B.VOC programmes</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.bVocPercentage}
-                onChange={(e) => updateFormData('bVocPercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">List of B.VOC programmes</label>
-              <textarea
-                className="textarea"
-                value={formData.bVocList}
-                onChange={(e) => updateFormData('bVocList', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-      case 6: // Review & Submit
-        return (
-          <div className="form-section">
-            <h2 className="section-title">{section.title}</h2>
-            <p className="section-description">{section.description}</p>
-            
-            {submitted ? (
-              <div className="success-message">
-                ✅ Form submitted successfully! Thank you for your submission.
-                <br />
-                <small>Form will reset automatically in 5 seconds...</small>
-              </div>
-            ) : (
-              <div className="summary-grid">
-                <div className="summary-card">
-                  <h4>Institution Details</h4>
-                  <p><strong>Institution:</strong> {formData.college || 'Not selected'}</p>
-                  <p><strong>Total Programs:</strong> {formData.totalPrograms || 'N/A'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>UGC CCFUGP</h4>
-                  <p><strong>UGC Followed:</strong> {formData.ugcFollowed || 'Not specified'}</p>
-                  <p><strong>UG Programs:</strong> {formData.ugProgramsNumber || 0} ({formData.ugProgramsPercentage || 0}%)</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Regulating Councils</h4>
-                  <p><strong>Programs:</strong> {formData.regulatingCouncilsNumber || 0} ({formData.regulatingCouncilsPercentage || 0}%)</p>
-                  <p><strong>Councils:</strong> {formData.regulatingCouncilsNames || 'Not specified'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Non-Aligned Programs</h4>
-                  <p><strong>Programs:</strong> {formData.ccfugpProgramsNumber || 0} ({formData.ccfugpProgramsPercentage || 0}%)</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Bachelor Degree Programs</h4>
-                  <p><strong>Programs:</strong> {formData.bachelorDegreeNumber || 0} ({formData.bachelorDegreePercentage || 0}%)</p>
-                  <p><strong>List:</strong> {formData.bachelorDegreeList || 'Not specified'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>B.VOC Programs</h4>
-                  <p><strong>Programs:</strong> {formData.bVocNumber || 0} ({formData.bVocPercentage || 0}%)</p>
-                  <p><strong>List:</strong> {formData.bVocList || 'Not specified'}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
-      default:
-        return <div>Section not found</div>;
+      case 0: return renderResearchMoUs();
+      case 1: return renderExchangesCollaborations();
+      case 2: return renderReview();
+      case 3: return renderSubmit();
+      default: return <div>Section not found</div>;
     }
   };
 
+  // ====================================
+  // COMPONENT RETURN
+  // ====================================
   const progressPercentage = ((currentSection + 1) / sections.length) * 100;
 
   return (
     <div className="container">
-     <FormHeader />
-     <PageNavigationSubheader totalPages={21}/>
+      <FormHeader 
+        onSignIn={() => { /* TODO: implement sign in logic */ }} 
+        onSignUp={() => { /* TODO: implement sign up logic */ }} 
+      />
+      <PageNavigationSubheader totalPages={21}/>
 
-    <Page19 
-      progressPercentage={progressPercentage}
-      sections={sections}
-      currentSection={currentSection}
-      completedSections={completedSections}
-      handleSectionClick={handleSectionClick}
-      handleSubmit={handleSubmit}
-      handlePrevious={handlePrevious}
-      handleNext={handleNext}
-      resetForm={resetForm}
-      submitted={submitted}
-      renderSection={renderSection}
-    />
+      <Page19
+        progressPercentage={progressPercentage}
+        sections={sections}
+        currentSection={currentSection}
+        completedSections={completedSections}
+        handleSectionClick={handleSectionClick}
+        handleSubmit={handleSubmit}
+        handlePrevious={handlePrevious}
+        handleNext={currentSection === sections.length - 1 && submitted ? handleNavigateToNextForm : handleNext}
+        resetForm={resetForm}
+        submitted={submitted}
+        renderSection={renderSection}
+        isLastSection={currentSection === sections.length - 1}
+      />
     </div>
   );
 };
 
-export default CollegeProgramForm19;
+export default ResearchMoUsForm;

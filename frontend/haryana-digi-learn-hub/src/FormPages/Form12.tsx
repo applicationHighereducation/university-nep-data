@@ -1,50 +1,25 @@
-// CollegeProgramForm5.tsx
-import React, { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import './Form12.css';
+import React, { useState, useEffect, FormEvent } from 'react';
+import './Form1.css';
 import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
-import FormPage from '../components/FormPage';
 import Page12 from '../pages/Page12';
 
-// Type definitions
+// ====================================
+// TYPE DEFINITIONS
+// ====================================
 interface FormData {
-  college: string;
-  totalPrograms: string | number;
-  ugcFollowed: string;
-  ugProgramsNumber: string | number;
-  ugProgramsPercentage: string | number;
-  regulatingCouncilsNumber: string | number;
-  regulatingCouncilsNames: string;
-  regulatingCouncilsPercentage: string | number;
-  ccfugpProgramsNumber: string | number;
-  ccfugpProgramsPercentage: string | number;
-  bachelorDegreeNumber: string | number;
-  bachelorDegreeList: string;
-  bachelorDegreePercentage: string | number;
-  bVocNumber: string | number;
-  bVocList: string;
-  bVocPercentage: string | number;
-}
-
-interface CollegeInfo {
-  programs: number;
-  ugcFollowed: string;
-  ugProgramsNumber: number;
-  ugProgramsPercentage: number;
-  regulatingCouncilsNumber: number;
-  regulatingCouncilsPercentage: number;
-  bachelorDegreeNumber: number;
-  bachelorDegreePercentage: number;
-  bVocNumber: number;
-  bVocPercentage: number;
-}
-
-interface CollegeData {
-  [key: string]: CollegeInfo;
-}
-
-interface FormErrors {
-  [key: string]: string;
+  // Section 1: First & Second Year
+  firstYearAppearedNumber: string | number;
+  firstYearExitPercentage: string | number;
+  secondYearReEntryNumber: string | number;
+  secondYearAppearedNumber: string | number;
+  secondYearExitPercentage: string | number;
+  
+  // Section 2: Third Year & Honours
+  thirdYearReEntryNumber: string | number;
+  thirdYearAppearedNumber: string | number;
+  thirdYearExitPercentage: string | number;
+  fourthYearHonoursPercentage: string | number;
 }
 
 interface Section {
@@ -54,165 +29,95 @@ interface Section {
   fields: string[];
 }
 
-const CollegeProgramForm12: React.FC = () => {
+// ====================================
+// MAIN COMPONENT
+// ====================================
+const UGExitOptionsForm: React.FC = () => {
   const [currentSection, setCurrentSection] = useState<number>(0);
   const [completedSections, setCompletedSections] = useState<Set<number>>(new Set());
-  const [formData, setFormData] = useState<FormData>({
-    college: '',
-    totalPrograms: '',
-    ugcFollowed: '',
-    ugProgramsNumber: '',
-    ugProgramsPercentage: '',
-    regulatingCouncilsNumber: '',
-    regulatingCouncilsNames: '',
-    regulatingCouncilsPercentage: '',
-    ccfugpProgramsNumber: '',
-    ccfugpProgramsPercentage: '',
-    bachelorDegreeNumber: '',
-    bachelorDegreeList: '',
-    bachelorDegreePercentage: '',
-    bVocNumber: '',
-    bVocList: '',
-    bVocPercentage: ''
-  });
-
   const [submitted, setSubmitted] = useState<boolean>(false);
-  const [errors, setErrors] = useState<FormErrors>({});
+  
+  const [formData, setFormData] = useState<FormData>({
+    // Default values set to 0 for numbers
+    firstYearAppearedNumber: 0,
+    firstYearExitPercentage: 0,
+    secondYearReEntryNumber: 0,
+    secondYearAppearedNumber: 0,
+    secondYearExitPercentage: 0,
+    thirdYearReEntryNumber: 0,
+    thirdYearAppearedNumber: 0,
+    thirdYearExitPercentage: 0,
+    fourthYearHonoursPercentage: 0,
+  });
 
   // Define sections
   const sections: Section[] = [
-    {
-      id: 0,
-      title: "Institution Selection",
-      description: "Select your institution and view program overview",
-      fields: ['college', 'totalPrograms']
-    },
-    {
-      id: 1,
-      title: "UGC CCFUGP Information", 
-      description: "Provide details about UGC CCFUGP alignment",
-      fields: ['ugcFollowed', 'ugProgramsNumber', 'ugProgramsPercentage']
-    },
-    {
-      id: 2,
-      title: "Regulating Councils",
-      description: "Information about regulating council alignments", 
-      fields: ['regulatingCouncilsNumber', 'regulatingCouncilsNames', 'regulatingCouncilsPercentage']
-    },
-    {
-      id: 3,
-      title: "Non-Aligned Programs",
-      description: "Programs not aligned to CCFUGP or councils",
-      fields: ['ccfugpProgramsNumber', 'ccfugpProgramsPercentage']
-    },
-    {
-      id: 4,
-      title: "Bachelor Degree Programs", 
-      description: "3-year bachelor degree program details",
-      fields: ['bachelorDegreeNumber', 'bachelorDegreeList', 'bachelorDegreePercentage']
-    },
-    {
-      id: 5,
-      title: "B.VOC Programs",
-      description: "Bachelor of Vocation program information", 
-      fields: ['bVocNumber', 'bVocList', 'bVocPercentage']
-    },
-    {
-      id: 6,
-      title: "Review & Submit",
-      description: "Review all information before submission",
-      fields: []
-    }
+    { id: 0, title: "First & Second Year", description: "First and second year exit options and progression", fields: [] },
+    { id: 1, title: "Third Year & Honours", description: "Third year exits and honours program entry", fields: [] },
+    { id: 2, title: "Review", description: "Review all information before submission", fields: [] },
+    { id: 3, title: "Submit", description: "Final submission", fields: [] }
   ];
 
-  // College data from CSV
-  const collegeData: CollegeData = {
-    'JCBUST': {
-      programs: 20, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 2,
-      ugProgramsPercentage: 10,
-      regulatingCouncilsNumber: 10,
-      regulatingCouncilsPercentage: 50,
-      bachelorDegreeNumber: 3,
-      bachelorDegreePercentage: 15,
-      bVocNumber: 5,
-      bVocPercentage: 25
-    },
-    'GJU': { 
-      programs: 10, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 3,
-      ugProgramsPercentage: 30,
-      regulatingCouncilsNumber: 5,
-      regulatingCouncilsPercentage: 50,
-      bachelorDegreeNumber: 0,
-      bachelorDegreePercentage: 0,
-      bVocNumber: 1,
-      bVocPercentage: 10
-    },
-    'Manav Rachna': { 
-      programs: 15, 
-      ugcFollowed: 'No',
-      ugProgramsNumber: 0,
-      ugProgramsPercentage: 0,
-      regulatingCouncilsNumber: 10,
-      regulatingCouncilsPercentage: 66.6666667,
-      bachelorDegreeNumber: 2,
-      bachelorDegreePercentage: 13.3333333,
-      bVocNumber: 1,
-      bVocPercentage: 6.6666667
-    },
-    'DCRUST': { 
-      programs: 25, 
-      ugcFollowed: 'Yes',
-      ugProgramsNumber: 6,
-      ugProgramsPercentage: 24,
-      regulatingCouncilsNumber: 12,
-      regulatingCouncilsPercentage: 48,
-      bachelorDegreeNumber: 0,
-      bachelorDegreePercentage: 0,
-      bVocNumber: 3,
-      bVocPercentage: 12
-    }
-  };
-
+  // ====================================
+  // UTILITY FUNCTIONS
+  // ====================================
   const updateFormData = (field: keyof FormData, value: string | number): void => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+    setFormData(prev => ({ ...prev, [field]: value === '' ? 0 : value }));
   };
 
-  const validateSection = (sectionId: number): boolean => {
-    const newErrors: FormErrors = {};
-
-    // Validation for each section
-    switch (sectionId) {
-      case 0: // Institution Selection
-        if (!formData.college) {
-          newErrors.college = 'Please select an institution';
-        }
-        break;
-      case 1: // UGC CCFUGP
-        if (!formData.ugcFollowed) {
-          newErrors.ugcFollowed = 'Please select if UGC CCFUGP is followed';
-        }
-        break;
-      // Add more validations as needed
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  // Generic component for rendering number input
+  const renderNumberInput = (
+    label: string,
+    field: keyof FormData,
+    required = false
+  ): JSX.Element => {
+    return (
+      <div className="form-group">
+        <label className="label">
+          {label} {required && <span className="required">*</span>}
+        </label>
+        <input
+          type="number"
+          className="input"
+          value={formData[field]}
+          onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : e.target.value)}
+          min="0"
+        />
+      </div>
+    );
   };
 
+  // Component for rendering percentage input
+  const renderPercentageInput = (
+    label: string,
+    field: keyof FormData,
+    required = false
+  ): JSX.Element => {
+    return (
+      <div className="form-group">
+        <label className="label">
+          {label} {required && <span className="required">*</span>}
+        </label>
+        <input
+          type="number"
+          className="input"
+          value={formData[field]}
+          onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : e.target.value)}
+          min="0"
+          max="100"
+          step="0.01"
+        />
+      </div>
+    );
+  };
+
+  // ====================================
+  // EVENT HANDLERS
+  // ====================================
   const handleNext = (): void => {
-    if (validateSection(currentSection)) {
-      setCompletedSections(prev => new Set([...prev, currentSection]));
-      if (currentSection < sections.length - 1) {
-        setCurrentSection(prev => prev + 1);
-      }
+    setCompletedSections(prev => new Set([...prev, currentSection]));
+    if (currentSection < sections.length - 1) {
+      setCurrentSection(prev => prev + 1);
     }
   };
 
@@ -223,445 +128,378 @@ const CollegeProgramForm12: React.FC = () => {
   };
 
   const handleSectionClick = (sectionId: number): void => {
-    // Allow navigation to completed sections or the next incomplete section
     const maxAllowedSection = Math.max(...Array.from(completedSections), -1) + 1;
     if (sectionId <= maxAllowedSection) {
       setCurrentSection(sectionId);
     }
   };
 
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    console.log('UG Exit Options Form submitted:', formData);
+    setSubmitted(true);
+    
+    // Show popup and redirect after delay
+    setTimeout(() => {
+      window.location.href = '/form/page13';
+    }, 2000);
+  };
+
+  const handleNavigateToNextForm = (): void => {
+    window.location.href = '/form/page13';
+  };
+
   const resetForm = (): void => {
     setFormData({
-      college: '',
-      totalPrograms: '',
-      ugcFollowed: '',
-      ugProgramsNumber: '',
-      ugProgramsPercentage: '',
-      regulatingCouncilsNumber: '',
-      regulatingCouncilsNames: '',
-      regulatingCouncilsPercentage: '',
-      ccfugpProgramsNumber: '',
-      ccfugpProgramsPercentage: '',
-      bachelorDegreeNumber: '',
-      bachelorDegreeList: '',
-      bachelorDegreePercentage: '',
-      bVocNumber: '',
-      bVocList: '',
-      bVocPercentage: ''
+      // Reset to default values (0 for numbers)
+      firstYearAppearedNumber: 0,
+      firstYearExitPercentage: 0,
+      secondYearReEntryNumber: 0,
+      secondYearAppearedNumber: 0,
+      secondYearExitPercentage: 0,
+      thirdYearReEntryNumber: 0,
+      thirdYearAppearedNumber: 0,
+      thirdYearExitPercentage: 0,
+      fourthYearHonoursPercentage: 0,
     });
-    setErrors({});
     setSubmitted(false);
     setCurrentSection(0);
     setCompletedSections(new Set());
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-    setSubmitted(true);
-    
-    // Reset form after 5 seconds
-    setTimeout(() => {
-      resetForm();
-    }, 5000);
-  };
+  // ====================================
+  // SECTION RENDERERS
+  // ====================================
+  
+  // SECTION 0: FIRST & SECOND YEAR
+  const renderFirstSecondYear = (): JSX.Element => (
+    <div className="form-section">
+      <h2 className="section-title">First & Second Year</h2>
+      <p className="section-description">First and second year exit options and progression</p>
 
-  // Auto-populate fields when college is selected
-  useEffect(() => {
-    if (formData.college && collegeData[formData.college]) {
-      const data: CollegeInfo = collegeData[formData.college];
-      setFormData(prev => ({
-        ...prev,
-        totalPrograms: data.programs,
-        ugcFollowed: data.ugcFollowed,
-        ugProgramsNumber: data.ugProgramsNumber,
-        ugProgramsPercentage: data.ugProgramsPercentage,
-        regulatingCouncilsNumber: data.regulatingCouncilsNumber,
-        regulatingCouncilsPercentage: data.regulatingCouncilsPercentage,
-        bachelorDegreeNumber: data.bachelorDegreeNumber,
-        bachelorDegreePercentage: data.bachelorDegreePercentage,
-        bVocNumber: data.bVocNumber,
-        bVocPercentage: data.bVocPercentage
-      }));
-    }
-  }, [formData.college]);
+      <div className="form-grid">
+        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600', color: '#2c3e50' }}>First Year (End of 2nd Semester)</h3>
+        
+        {renderNumberInput('UG: Students appeared in 1st year/2nd semester - Number', 'firstYearAppearedNumber')}
+        {renderPercentageInput('UG: Students opted & provided Exit after 1st year - Percentage', 'firstYearExitPercentage')}
+        
+        {renderNumberInput('UG: Students entering 2nd year after Exit (same/other HEI) - Number', 'secondYearReEntryNumber')}
+        <div></div>
+        
+        <h3 style={{ gridColumn: '1 / -1', margin: '30px 0 10px 0', fontSize: '1.2em', fontWeight: '600', color: '#2c3e50' }}>Second Year (End of 4th Semester)</h3>
+        
+        {renderNumberInput('UG: Students appeared in 2nd year/4th semester - Number', 'secondYearAppearedNumber')}
+        {renderPercentageInput('UG: Students opted & provided Exit after 2nd year/4th sem - Percentage', 'secondYearExitPercentage')}
+      </div>
 
+      {/* Data summary for current year progress */}
+      {(Number(formData.firstYearAppearedNumber) > 0 || Number(formData.secondYearAppearedNumber) > 0) && (
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ 
+            padding: '12px', 
+            backgroundColor: '#e8f4fd', 
+            border: '1px solid #bee5eb', 
+            borderRadius: '4px',
+            fontSize: '0.9rem',
+            color: '#0c5460'
+          }}>
+            <strong>📊 Early Years Summary:</strong>
+            <ul style={{ margin: '8px 0 0 20px', padding: 0 }}>
+              <li>1st Year Students: {formData.firstYearAppearedNumber || 0} | Exit Rate: {formData.firstYearExitPercentage || 0}%</li>
+              <li>2nd Year Students: {formData.secondYearAppearedNumber || 0} | Exit Rate: {formData.secondYearExitPercentage || 0}%</li>
+              <li>Re-entries to 2nd Year: {formData.secondYearReEntryNumber || 0}</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // SECTION 1: THIRD YEAR & HONOURS
+  const renderThirdYearHonours = (): JSX.Element => (
+    <div className="form-section">
+      <h2 className="section-title">Third Year & Honours</h2>
+      <p className="section-description">Third year exits and honours program entry</p>
+
+      <div className="form-grid">
+        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600', color: '#2c3e50' }}>Third Year (End of 6th Semester)</h3>
+        
+        {renderNumberInput('UG: Students entering 3rd year after Exit (same/other HEI) - Number', 'thirdYearReEntryNumber')}
+        {renderNumberInput('UG: Students appeared in 3rd year/6th semester - Number', 'thirdYearAppearedNumber')}
+        
+        {renderPercentageInput('UG: Students opted & provided Exit after 3rd year/6th sem - Percentage', 'thirdYearExitPercentage')}
+        <div></div>
+        
+        <h3 style={{ gridColumn: '1 / -1', margin: '30px 0 10px 0', fontSize: '1.2em', fontWeight: '600', color: '#2c3e50' }}>Fourth Year - Honours Programs</h3>
+        
+        {renderPercentageInput('UG: Students entering 4th year/7th sem Honours/Honours with Research - Percentage', 'fourthYearHonoursPercentage')}
+        <div></div>
+      </div>
+
+      {/* Data summary for advanced years */}
+      {(Number(formData.thirdYearAppearedNumber) > 0 || Number(formData.fourthYearHonoursPercentage) > 0) && (
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ 
+            padding: '12px', 
+            backgroundColor: '#f0f8ff', 
+            border: '1px solid #cce7ff', 
+            borderRadius: '4px',
+            fontSize: '0.9rem',
+            color: '#0056b3'
+          }}>
+            <strong>🎓 Advanced Years Summary:</strong>
+            <ul style={{ margin: '8px 0 0 20px', padding: 0 }}>
+              <li>3rd Year Students: {formData.thirdYearAppearedNumber || 0} | Exit Rate: {formData.thirdYearExitPercentage || 0}%</li>
+              <li>Honours Entry Rate: {formData.fourthYearHonoursPercentage || 0}%</li>
+              <li>Re-entries to 3rd Year: {formData.thirdYearReEntryNumber || 0}</li>
+              <li>Estimated Honours Students: {
+                Number(formData.thirdYearAppearedNumber) > 0 
+                  ? Math.round(Number(formData.thirdYearAppearedNumber) * Number(formData.fourthYearHonoursPercentage || 0) / 100)
+                  : 0
+              }</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // SECTION 2: REVIEW
+  const renderReview = (): JSX.Element => (
+    <div className="form-section">
+      <h2 className="section-title">Review</h2>
+      <p className="section-description">Review all information before submission</p>
+      
+      <div className="summary-grid">
+        <div className="summary-card">
+          <h4>First Year Statistics</h4>
+          <p><strong>Students Appeared (1st year/2nd sem):</strong> {formData.firstYearAppearedNumber || 0}</p>
+          <p><strong>Exit Rate after 1st Year:</strong> {formData.firstYearExitPercentage || 0}%</p>
+          <p><strong>Estimated Exits:</strong> {
+            Number(formData.firstYearAppearedNumber) > 0 
+              ? Math.round(Number(formData.firstYearAppearedNumber) * Number(formData.firstYearExitPercentage || 0) / 100)
+              : 0
+          } students</p>
+          <p><strong>Re-entries to 2nd Year:</strong> {formData.secondYearReEntryNumber || 0}</p>
+        </div>
+
+        <div className="summary-card">
+          <h4>Second Year Statistics</h4>
+          <p><strong>Students Appeared (2nd year/4th sem):</strong> {formData.secondYearAppearedNumber || 0}</p>
+          <p><strong>Exit Rate after 2nd Year:</strong> {formData.secondYearExitPercentage || 0}%</p>
+          <p><strong>Estimated Exits:</strong> {
+            Number(formData.secondYearAppearedNumber) > 0 
+              ? Math.round(Number(formData.secondYearAppearedNumber) * Number(formData.secondYearExitPercentage || 0) / 100)
+              : 0
+          } students</p>
+        </div>
+
+        <div className="summary-card">
+          <h4>Third Year Statistics</h4>
+          <p><strong>Re-entries to 3rd Year:</strong> {formData.thirdYearReEntryNumber || 0}</p>
+          <p><strong>Students Appeared (3rd year/6th sem):</strong> {formData.thirdYearAppearedNumber || 0}</p>
+          <p><strong>Exit Rate after 3rd Year:</strong> {formData.thirdYearExitPercentage || 0}%</p>
+          <p><strong>Estimated Exits:</strong> {
+            Number(formData.thirdYearAppearedNumber) > 0 
+              ? Math.round(Number(formData.thirdYearAppearedNumber) * Number(formData.thirdYearExitPercentage || 0) / 100)
+              : 0
+          } students</p>
+        </div>
+
+        <div className="summary-card">
+          <h4>Honours Program Entry</h4>
+          <p><strong>4th Year Honours Entry Rate:</strong> {formData.fourthYearHonoursPercentage || 0}%</p>
+          <p><strong>Estimated Honours Students:</strong> {
+            Number(formData.thirdYearAppearedNumber) > 0 
+              ? Math.round(Number(formData.thirdYearAppearedNumber) * Number(formData.fourthYearHonoursPercentage || 0) / 100)
+              : 0
+          } students</p>
+          <p><strong>Based on 3rd Year Appeared:</strong> {formData.thirdYearAppearedNumber || 0} students</p>
+        </div>
+
+        <div className="summary-card">
+          <h4>Progression Analysis</h4>
+          <p><strong>1st to 2nd Year Continuation:</strong> {
+            Number(formData.firstYearAppearedNumber) > 0 
+              ? `${(100 - Number(formData.firstYearExitPercentage || 0)).toFixed(1)}%`
+              : '0%'
+          }</p>
+          <p><strong>2nd to 3rd Year Continuation:</strong> {
+            Number(formData.secondYearAppearedNumber) > 0 
+              ? `${(100 - Number(formData.secondYearExitPercentage || 0)).toFixed(1)}%`
+              : '0%'
+          }</p>
+          <p><strong>3rd Year to Degree/Honours:</strong> {
+            Number(formData.thirdYearAppearedNumber) > 0 
+              ? `${(100 - Number(formData.thirdYearExitPercentage || 0)).toFixed(1)}%`
+              : '0%'
+          }</p>
+          <p><strong>Overall Retention Quality:</strong> {
+            ((100 - Number(formData.firstYearExitPercentage || 0)) + 
+             (100 - Number(formData.secondYearExitPercentage || 0)) + 
+             (100 - Number(formData.thirdYearExitPercentage || 0))) / 3 >= 80 ? '🟢 Excellent' :
+            ((100 - Number(formData.firstYearExitPercentage || 0)) + 
+             (100 - Number(formData.secondYearExitPercentage || 0)) + 
+             (100 - Number(formData.thirdYearExitPercentage || 0))) / 3 >= 70 ? '🟡 Good' : '🔴 Needs Attention'
+          }</p>
+        </div>
+
+        <div className="summary-card">
+          <h4>Re-entry & Mobility Summary</h4>
+          <p><strong>Total Re-entries (All Years):</strong> {
+            Number(formData.secondYearReEntryNumber || 0) + 
+            Number(formData.thirdYearReEntryNumber || 0)
+          }</p>
+          <p><strong>Re-entries to 2nd Year:</strong> {formData.secondYearReEntryNumber || 0}</p>
+          <p><strong>Re-entries to 3rd Year:</strong> {formData.thirdYearReEntryNumber || 0}</p>
+          <p><strong>Student Mobility:</strong> {
+            (Number(formData.secondYearReEntryNumber || 0) + Number(formData.thirdYearReEntryNumber || 0)) > 0 ? 'Active' : 'Minimal'
+          }</p>
+          <p style={{ marginTop: '8px', fontSize: '0.85rem', color: '#6c757d' }}>
+            Re-entries indicate students returning after exit from same/other HEI
+          </p>
+        </div>
+
+        <div className="summary-card">
+          <h4>Program Efficiency Metrics</h4>
+          <p><strong>Total Students Tracked:</strong> {
+            Math.max(
+              Number(formData.firstYearAppearedNumber || 0),
+              Number(formData.secondYearAppearedNumber || 0),
+              Number(formData.thirdYearAppearedNumber || 0)
+            )
+          }</p>
+          <p><strong>Exit Flexibility Offered:</strong> {
+            (Number(formData.firstYearExitPercentage || 0) > 0 ? 1 : 0) +
+            (Number(formData.secondYearExitPercentage || 0) > 0 ? 1 : 0) +
+            (Number(formData.thirdYearExitPercentage || 0) > 0 ? 1 : 0)
+          }/3 exit points</p>
+          <p><strong>Honours Program Adoption:</strong> {
+            Number(formData.fourthYearHonoursPercentage || 0) >= 25 ? '🟢 High' :
+            Number(formData.fourthYearHonoursPercentage || 0) >= 15 ? '🟡 Moderate' :
+            Number(formData.fourthYearHonoursPercentage || 0) > 0 ? '🟠 Low' : '⚪ Not Available'
+          }</p>
+          <p><strong>Data Completeness:</strong> {
+            Object.values(formData).filter(value => Number(value) > 0).length >= 6 ? 'Complete' : 'Partial'
+          }</p>
+        </div>
+
+        <div className="summary-card">
+          <h4>Key Performance Indicators</h4>
+          <p><strong>Average Exit Rate:</strong> {
+            ((Number(formData.firstYearExitPercentage || 0) + 
+              Number(formData.secondYearExitPercentage || 0) + 
+              Number(formData.thirdYearExitPercentage || 0)) / 3).toFixed(1)
+          }%</p>
+          <p><strong>Student Flow Efficiency:</strong> {
+            Number(formData.firstYearAppearedNumber || 0) > 0 && 
+            Number(formData.secondYearAppearedNumber || 0) > 0 && 
+            Number(formData.thirdYearAppearedNumber || 0) > 0 ? 'Tracked' : 'Partial'
+          }</p>
+          <p><strong>Exit Option Utilization:</strong> {
+            Math.max(
+              Number(formData.firstYearExitPercentage || 0),
+              Number(formData.secondYearExitPercentage || 0),
+              Number(formData.thirdYearExitPercentage || 0)
+            ).toFixed(1)
+          }% (highest)</p>
+          <p><strong>Re-entry Support:</strong> {
+            Number(formData.secondYearReEntryNumber || 0) + Number(formData.thirdYearReEntryNumber || 0) > 0 ? 'Available' : 'Not Available'
+          }</p>
+        </div>
+      </div>
+
+      <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <p style={{ fontSize: '1.1rem', color: '#6c757d', marginBottom: '20px' }}>
+          Please review all the information above. If everything looks correct, proceed to the next step for final submission.
+        </p>
+      </div>
+    </div>
+  );
+
+  // SECTION 3: SUBMIT
+  const renderSubmit = (): JSX.Element => (
+    <div className="form-section">
+      <h2 className="section-title">Submit</h2>
+      <p className="section-description">Final submission</p>
+      
+      {submitted ? (
+        <div className="success-message">
+          <div className="success-icon">✅</div>
+          <h3>UG Exit Options Form Submitted Successfully!</h3>
+          <p>Thank you for your submission. Your UG exit options data has been recorded.</p>
+          <p>Redirecting to next form...</p>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+          <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>Ready to Submit</h3>
+          <p style={{ fontSize: '1.1rem', color: '#6c757d', marginBottom: '30px', lineHeight: '1.6' }}>
+            You have reviewed all your information. Click the "Submit Form" button below to finalize your submission.
+          </p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={(e) => {
+              const formEvent = { preventDefault: () => {} } as FormEvent<HTMLFormElement>;
+              handleSubmit(formEvent);
+            }}
+            style={{ 
+              padding: '15px 40px', 
+              fontSize: '1.1rem',
+              minWidth: '200px',
+              background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+              border: 'none'
+            }}
+          >
+            Submit Form
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
+  // ====================================
+  // MAIN RENDER FUNCTION
+  // ====================================
   const renderSection = (): JSX.Element => {
-    const section = sections[currentSection];
-
     switch (currentSection) {
-      case 0: // Institution Selection
-        return (
-          <div className="form-section">
-            <h2 className="section-title">{section.title}</h2>
-            <p className="section-description">{section.description}</p>
-            
-            <div className="form-grid">
-              <div className="form-group form-group-full">
-                <label className="label">
-                  Select Institution <span className="required">*</span>
-                </label>
-                <select
-                  className="select"
-                  value={formData.college}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => updateFormData('college', e.target.value)}
-                  required
-                >
-                  <option value="">-- Select Institution --</option>
-                  <option value="JCBUST">JCBUST</option>
-                  <option value="GJU">GJU</option>
-                  <option value="Manav Rachna">Manav Rachna</option>
-                  <option value="DCRUST">DCRUST</option>
-                </select>
-                {errors.college && <span className="validation-message">{errors.college}</span>}
-              </div>
-
-              {formData.college && (
-                <div className="card">
-                  <h3 className="card-title">{formData.totalPrograms || '0'}</h3>
-                  <p className="card-subtitle">Total Number of Programs</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-
-// UGC CCFUGP Information
-case 1:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group form-group-full">
-          <label className="label">
-            Is UGC CCFUGP followed? <span className="required">*</span>
-          </label>
-          <div className="radio-group">
-            <div
-              className={`radio-option ${formData.ugcFollowed === 'Yes' ? 'selected' : ''}`}
-              onClick={() => updateFormData('ugcFollowed', 'Yes')}
-            >
-              <input
-                type="radio"
-                name="ugc_followed"
-                value="Yes"
-                checked={formData.ugcFollowed === 'Yes'}
-                onChange={() => updateFormData('ugcFollowed', 'Yes')}
-              />
-              <label>Yes</label>
-            </div>
-            <div
-              className={`radio-option ${formData.ugcFollowed === 'No' ? 'selected' : ''}`}
-              onClick={() => updateFormData('ugcFollowed', 'No')}
-            >
-              <input
-                type="radio"
-                name="ugc_followed"
-                value="No"
-                checked={formData.ugcFollowed === 'No'}
-                onChange={() => updateFormData('ugcFollowed', 'No')}
-              />
-              <label>No</label>
-            </div>
-          </div>
-          {errors.ugcFollowed && <span className="validation-message">{errors.ugcFollowed}</span>}
-        </div>
-
-        <div className="form-group">
-          <label className="label">Number of UG programmes aligned to UGC CCFUGP</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.ugProgramsNumber}
-            onChange={(e) => updateFormData('ugProgramsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.ugProgramsNumber) > 0 && (
-          <div className="form-group">
-            <label className="label">Percentage of UG programmes aligned to UGC CCFUGP</label>
-            <input
-              type="number"
-              className="input"
-              value={formData.ugProgramsPercentage}
-              onChange={(e) => updateFormData('ugProgramsPercentage', e.target.value)}
-              min="0"
-              max="100"
-              step="0.01"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-// Regulating Councils
-case 2:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of UG programmes aligned to Regulating Councils</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.regulatingCouncilsNumber}
-            onChange={(e) => updateFormData('regulatingCouncilsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.regulatingCouncilsNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage aligned to Regulating Councils</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.regulatingCouncilsPercentage}
-                onChange={(e) => updateFormData('regulatingCouncilsPercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">Names of Regulating Councils</label>
-              <textarea
-                className="textarea"
-                value={formData.regulatingCouncilsNames}
-                onChange={(e) => updateFormData('regulatingCouncilsNames', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-// Non-Aligned Programs
-case 3:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of programmes neither CCFUGP nor Council</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.ccfugpProgramsNumber}
-            onChange={(e) => updateFormData('ccfugpProgramsNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.ccfugpProgramsNumber) > 0 && (
-          <div className="form-group">
-            <label className="label">Percentage of programmes neither CCFUGP nor Council</label>
-            <input
-              type="number"
-              className="input"
-              value={formData.ccfugpProgramsPercentage}
-              onChange={(e) => updateFormData('ccfugpProgramsPercentage', e.target.value)}
-              min="0"
-              max="100"
-              step="0.01"
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-// Bachelor Degree Programs
-case 4:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of 3-year bachelor Degree programmes (non-B.VOC)</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.bachelorDegreeNumber}
-            onChange={(e) => updateFormData('bachelorDegreeNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.bachelorDegreeNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage of 3-year bachelor Degree programmes (non-B.VOC)</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.bachelorDegreePercentage}
-                onChange={(e) => updateFormData('bachelorDegreePercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">List of 3-year bachelor Degree programmes (non-B.VOC)</label>
-              <textarea
-                className="textarea"
-                value={formData.bachelorDegreeList}
-                onChange={(e) => updateFormData('bachelorDegreeList', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-// B.VOC Programs
-case 5:
-  return (
-    <div className="form-section">
-      <h2 className="section-title">{section.title}</h2>
-      <p className="section-description">{section.description}</p>
-
-      <div className="form-grid">
-        <div className="form-group">
-          <label className="label">Number of B.VOC programmes</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.bVocNumber}
-            onChange={(e) => updateFormData('bVocNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.bVocNumber) > 0 && (
-          <>
-            <div className="form-group">
-              <label className="label">Percentage of B.VOC programmes</label>
-              <input
-                type="number"
-                className="input"
-                value={formData.bVocPercentage}
-                onChange={(e) => updateFormData('bVocPercentage', e.target.value)}
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-
-            <div className="form-group form-group-full">
-              <label className="label">List of B.VOC programmes</label>
-              <textarea
-                className="textarea"
-                value={formData.bVocList}
-                onChange={(e) => updateFormData('bVocList', e.target.value)}
-                rows={3}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-      case 6: // Review & Submit
-        return (
-          <div className="form-section">
-            <h2 className="section-title">{section.title}</h2>
-            <p className="section-description">{section.description}</p>
-            
-            {submitted ? (
-              <div className="success-message">
-                ✅ Form submitted successfully! Thank you for your submission.
-                <br />
-                <small>Form will reset automatically in 5 seconds...</small>
-              </div>
-            ) : (
-              <div className="summary-grid">
-                <div className="summary-card">
-                  <h4>Institution Details</h4>
-                  <p><strong>Institution:</strong> {formData.college || 'Not selected'}</p>
-                  <p><strong>Total Programs:</strong> {formData.totalPrograms || 'N/A'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>UGC CCFUGP</h4>
-                  <p><strong>UGC Followed:</strong> {formData.ugcFollowed || 'Not specified'}</p>
-                  <p><strong>UG Programs:</strong> {formData.ugProgramsNumber || 0} ({formData.ugProgramsPercentage || 0}%)</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Regulating Councils</h4>
-                  <p><strong>Programs:</strong> {formData.regulatingCouncilsNumber || 0} ({formData.regulatingCouncilsPercentage || 0}%)</p>
-                  <p><strong>Councils:</strong> {formData.regulatingCouncilsNames || 'Not specified'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Non-Aligned Programs</h4>
-                  <p><strong>Programs:</strong> {formData.ccfugpProgramsNumber || 0} ({formData.ccfugpProgramsPercentage || 0}%)</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>Bachelor Degree Programs</h4>
-                  <p><strong>Programs:</strong> {formData.bachelorDegreeNumber || 0} ({formData.bachelorDegreePercentage || 0}%)</p>
-                  <p><strong>List:</strong> {formData.bachelorDegreeList || 'Not specified'}</p>
-                </div>
-
-                <div className="summary-card">
-                  <h4>B.VOC Programs</h4>
-                  <p><strong>Programs:</strong> {formData.bVocNumber || 0} ({formData.bVocPercentage || 0}%)</p>
-                  <p><strong>List:</strong> {formData.bVocList || 'Not specified'}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
-      default:
-        return <div>Section not found</div>;
+      case 0: return renderFirstSecondYear();
+      case 1: return renderThirdYearHonours();
+      case 2: return renderReview();
+      case 3: return renderSubmit();
+      default: return <div>Section not found</div>;
     }
   };
 
+  // ====================================
+  // COMPONENT RETURN
+  // ====================================
   const progressPercentage = ((currentSection + 1) / sections.length) * 100;
 
   return (
     <div className="container">
-     <FormHeader />
-     <PageNavigationSubheader totalPages={21}/>
+      <FormHeader 
+        onSignIn={() => { /* TODO: implement sign in logic */ }} 
+        onSignUp={() => { /* TODO: implement sign up logic */ }} 
+      />
+      <PageNavigationSubheader totalPages={21}/>
 
-    <Page12 
-      progressPercentage={progressPercentage}
-      sections={sections}
-      currentSection={currentSection}
-      completedSections={completedSections}
-      handleSectionClick={handleSectionClick}
-      handleSubmit={handleSubmit}
-      handlePrevious={handlePrevious}
-      handleNext={handleNext}
-      resetForm={resetForm}
-      submitted={submitted}
-      renderSection={renderSection}
-    />
+      <Page12
+        progressPercentage={progressPercentage}
+        sections={sections}
+        currentSection={currentSection}
+        completedSections={completedSections}
+        handleSectionClick={handleSectionClick}
+        handleSubmit={handleSubmit}
+        handlePrevious={handlePrevious}
+        handleNext={currentSection === sections.length - 1 && submitted ? handleNavigateToNextForm : handleNext}
+        resetForm={resetForm}
+        submitted={submitted}
+        renderSection={renderSection}
+        isLastSection={currentSection === sections.length - 1}
+      />
     </div>
   );
 };
 
-export default CollegeProgramForm12;
+export default UGExitOptionsForm;
