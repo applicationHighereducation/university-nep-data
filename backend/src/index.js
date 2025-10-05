@@ -11,6 +11,7 @@ import facultyRouter from './routes/facultyRoute.js'
 import departmentRouter from './routes/deptRoute.js'
 import programRouter from './routes/programRoute.js'
 import ugFormRouter from './routes/ugFormRoute.js'
+import pgFormRouter from './routes/pgFormRoute.js'
 
 dotenv.config({
   path: './env'
@@ -42,6 +43,7 @@ app.use('/api/faculty', facultyRouter)
 app.use('/api/department', departmentRouter)
 app.use('/api/program', programRouter)
 app.use('/api/ugform', ugFormRouter)
+app.use('/api/pgform', pgFormRouter)
 
 app.get('/', async(req,res) => {
   const result = await pool.query('SELECT * FROM users');

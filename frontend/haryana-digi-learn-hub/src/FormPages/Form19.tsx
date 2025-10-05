@@ -3,6 +3,7 @@ import './Form1.css';
 import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
 import Page19 from '../pages/Page19';
+import { Header } from '@/components/Header';
 
 // ====================================
 // TYPE DEFINITIONS
@@ -812,10 +813,7 @@ const ResearchMoUsForm: React.FC = () => {
 
   return (
     <div className="container">
-      <FormHeader 
-        onSignIn={() => { /* TODO: implement sign in logic */ }} 
-        onSignUp={() => { /* TODO: implement sign up logic */ }} 
-      />
+      <Header />
       <PageNavigationSubheader totalPages={21}/>
 
       <Page19

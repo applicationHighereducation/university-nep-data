@@ -3,6 +3,7 @@ import './Form1.css';
 import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
 import Page14 from '../pages/Page14';
+import { Header } from '@/components/Header';
 
 // ====================================
 // TYPE DEFINITIONS
@@ -451,10 +452,7 @@ const OverallExitEntryForm: React.FC = () => {
 
   return (
     <div className="container">
-      <FormHeader 
-        onSignIn={() => { /* TODO: implement sign in logic */ }} 
-        onSignUp={() => { /* TODO: implement sign up logic */ }} 
-      />
+      <Header />
       <PageNavigationSubheader totalPages={21}/>
 
       <Page14
