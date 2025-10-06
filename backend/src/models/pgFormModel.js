@@ -1,4 +1,5 @@
 import pool from '../config/db.js'
+import getCurrentSession from '../utils/generateSession.js';
 
 export const getTotalProgramsService = async(u_id) => {
   const result = await pool.query('SELECT COUNT(*) FROM program_data WHERE u_id = $1 and pt_id = $2', [u_id,2]);
@@ -10,15 +11,6 @@ export const getPGProgramsService = async(u_id) => {
   return result.rows
 }
 
-export const getCurrentSession = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-
-  const startDate = new Date(year, 6, 1);
-  const endDate = new Date(year + 1, 5, 30);
-
-  return today >= startDate && today <= endDate ? year : year - 1;
-};
 
 
 export const getProgramIdService = async (names) => {

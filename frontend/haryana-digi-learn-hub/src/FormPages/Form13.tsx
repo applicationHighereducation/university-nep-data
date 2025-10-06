@@ -4,6 +4,7 @@ import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
 import Page13 from '../pages/Page13';
 import { Header } from '@/components/Header';
+import axios from 'axios';
 
 // ====================================
 // TYPE DEFINITIONS
@@ -161,11 +162,37 @@ const PGExitEntryForm: React.FC = () => {
     );
   };
 
+  //fetching
+
+
+
+  //API Calls
+  const insertData = async() => {
+    try {
+      const exit = calculateExitPercentage()
+      const response = await axios.post('http://localhost:8000/api/page13/section1', {
+        pg_appear_1yr_count: formData.pgStudentsAppearedFirstYear,
+        pg_exit_1yr_percent: exit,
+        pg_enter_2yr_after4yrhonour_count : formData.pgStudentsEntering2ndYearAfter4YrHonours,
+        pg_enter_2yr_afterexit_count: formData.pgStudentsEntering2ndYearAfterExit
+      }, {withCredentials: true})
+    } catch (error) {
+      console.log('Error while inserting data:', error)
+    }
+  }
+
+
+  
+
+
   // ====================================
   // EVENT HANDLERS
   // ====================================
-  const handleNext = (): void => {
+  const handleNext = async() => {
     setCompletedSections(prev => new Set([...prev, currentSection]));
+    if(currentSection === 0){
+      await insertData()
+    }
     if (currentSection < sections.length - 1) {
       setCurrentSection(prev => prev + 1);
     }
@@ -221,6 +248,32 @@ const PGExitEntryForm: React.FC = () => {
     setCompletedSections(new Set());
     setValidationErrors([]);
   };
+
+
+  useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/page13/get', {withCredentials: true});
+      const existingData = response.data.data;
+;
+      console.log(existingData)
+      if (existingData) {
+        setFormData({
+          pgStudentsAppearedFirstYear: existingData.pg_appear_1yr_count || 0,
+          pgStudentsOptedExit: Math.round(
+    (existingData.pg_exit_1yr_percent / 100) * existingData.pg_appear_1yr_count
+  ) || 0,
+          pgStudentsEntering2ndYearAfter4YrHonours: existingData.pg_enter_2yr_after4yrhons || 0,
+          pgStudentsEntering2ndYearAfterExit: existingData.pg_enter_2yr_afterexit_count || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  fetchData();
+}, []);
 
   // ====================================
   // SECTION RENDERERS

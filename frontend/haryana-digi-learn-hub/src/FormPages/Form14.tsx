@@ -1,9 +1,10 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import './Form1.css';
 import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
 import Page14 from '../pages/Page14';
 import { Header } from '@/components/Header';
+import axios from 'axios';
 
 // ====================================
 // TYPE DEFINITIONS
@@ -28,11 +29,12 @@ const OverallExitEntryForm: React.FC = () => {
   const [currentSection, setCurrentSection] = useState<number>(0);
   const [completedSections, setCompletedSections] = useState<Set<number>>(new Set());
   const [submitted, setSubmitted] = useState<boolean>(false);
+  const [percentageErrors, setPercentageErrors] = useState<{ [key: string]: string }>({});
   
   const [formData, setFormData] = useState<FormData>({
-    // Default values set to 0 for percentages
-    overallStudentsExitPercentage: 0,
-    overallStudentsMultipleEntryPercentage: 0,
+    // Default values set to empty string
+    overallStudentsExitPercentage: '',
+    overallStudentsMultipleEntryPercentage: '',
   });
 
   // Define sections
@@ -46,7 +48,86 @@ const OverallExitEntryForm: React.FC = () => {
   // UTILITY FUNCTIONS
   // ====================================
   const updateFormData = (field: keyof FormData, value: string | number): void => {
-    setFormData(prev => ({ ...prev, [field]: value === '' ? 0 : value }));
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Function to validate percentage value
+  const validatePercentage = (value: string | number, fieldName: string): boolean => {
+    if (value === '' || value === null || value === undefined) {
+      setPercentageErrors(prev => ({ ...prev, [fieldName]: '' }));
+      return true;
+    }
+
+    const numValue = Number(value);
+    
+    if (isNaN(numValue)) {
+      setPercentageErrors(prev => ({ ...prev, [fieldName]: 'Please enter a valid number' }));
+      return false;
+    }
+
+    if (numValue < 0) {
+      setPercentageErrors(prev => ({ ...prev, [fieldName]: 'Percentage cannot be negative' }));
+      return false;
+    }
+
+    if (numValue > 100) {
+      setPercentageErrors(prev => ({ ...prev, [fieldName]: 'Percentage cannot exceed 100%' }));
+      return false;
+    }
+
+    setPercentageErrors(prev => ({ ...prev, [fieldName]: '' }));
+    return true;
+  };
+
+  // Function to handle percentage change
+  const handlePercentageChange = (field: keyof FormData, value: string): void => {
+    // Allow empty string or valid numbers
+    if (value === '') {
+      updateFormData(field, '');
+      setPercentageErrors(prev => ({ ...prev, [field]: '' }));
+      return;
+    }
+
+    // Allow typing decimal point and numbers
+    if (/^\d*\.?\d*$/.test(value)) {
+      updateFormData(field, value);
+      
+      // Only validate if it's a complete number (not just typing)
+      if (value !== '.' && !value.endsWith('.')) {
+        validatePercentage(value, field);
+      }
+    }
+  };
+
+  // Function to handle percentage blur (when user leaves the field)
+  const handlePercentageBlur = (field: keyof FormData, value: string | number): void => {
+    if (value === '' || value === null || value === undefined) {
+      updateFormData(field, '');
+      setPercentageErrors(prev => ({ ...prev, [field]: '' }));
+      return;
+    }
+
+    const numValue = Number(value);
+    
+    if (isNaN(numValue)) {
+      updateFormData(field, '');
+      setPercentageErrors(prev => ({ ...prev, [field]: '' }));
+      return;
+    }
+
+    // Clamp the value between 0 and 100
+    let clampedValue = numValue;
+    if (numValue < 0) {
+      clampedValue = 0;
+    } else if (numValue > 100) {
+      clampedValue = 100;
+    }
+
+    // Round to 2 decimal places
+    clampedValue = Math.round(clampedValue * 100) / 100;
+    
+    updateFormData(field, clampedValue);
+    setPercentageErrors(prev => ({ ...prev, [field]: '' }));
   };
 
   // Function to get mobility assessment
@@ -74,38 +155,114 @@ const OverallExitEntryForm: React.FC = () => {
     }
   };
 
-  // Generic component for rendering percentage input
+  // Generic component for rendering percentage input with validation
   const renderPercentageInput = (
     label: string,
     field: keyof FormData,
     required = false
   ): JSX.Element => {
+    const hasError = percentageErrors[field];
+    
     return (
       <div className="form-group form-group-full">
         <label className="label">
           {label} {required && <span className="required">*</span>}
+          <span style={{ fontSize: '0.85rem', color: '#6c757d', marginLeft: '10px' }}>
+            (0-100%)
+          </span>
         </label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <input
-            type="number"
-            className="input"
-            value={formData[field]}
-            onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : e.target.value)}
-            min="0"
-            max="100"
-            step="0.01"
-            style={{ flex: 1 }}
-          />
-          <span style={{ fontSize: '1.1rem', fontWeight: '500', color: '#495057' }}>%</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <input
+              type="text"
+              className="input"
+              value={formData[field]}
+              onChange={(e) => handlePercentageChange(field, e.target.value)}
+              onFocus={(e) => {
+                if (e.target.value === '0' || e.target.value === '') {
+                  updateFormData(field, '');
+                }
+              }}
+              onBlur={(e) => handlePercentageBlur(field, e.target.value)}
+              placeholder="0"
+              style={{ 
+                flex: 1,
+                borderColor: hasError ? '#dc3545' : undefined,
+                backgroundColor: hasError ? '#fff5f5' : undefined
+              }}
+            />
+            <span style={{ fontSize: '1.1rem', fontWeight: '500', color: '#495057' }}>%</span>
+          </div>
+          {hasError && (
+            <div style={{ 
+              fontSize: '0.85rem', 
+              color: '#dc3545',
+              marginTop: '2px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px'
+            }}>
+              <span>⚠️</span>
+              <span>{hasError}</span>
+            </div>
+          )}
+          <div style={{ fontSize: '0.75rem', color: '#6c757d', fontStyle: 'italic' }}>
+            Enter a value between 0 and 100. Decimals allowed (e.g., 45.5)
+          </div>
         </div>
       </div>
     );
   };
 
+  //API's 
+  const insertData = async () => {
+    try {
+      const response = await axios.post('http://localhost:8000/api/page14/insert', {
+        exitData : formData.overallStudentsExitPercentage,
+        entryData : formData.overallStudentsMultipleEntryPercentage
+      }, {withCredentials: true})
+      console.log(response.data.data)
+    } catch (error) {
+      console.log('Error while inserting data ', error)
+    }
+  }
+
+  useEffect(() => {
+    const fetchExistingData = async() => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/page14/get', {withCredentials: true})
+        const existingDataArray = response.data.data;
+        const existingData = existingDataArray[0]
+        console.log(existingData.student_exit_percentage)
+      if (existingData) {
+        setFormData({
+          overallStudentsExitPercentage: existingData.student_exit_percent, 
+          overallStudentsMultipleEntryPercentage: existingData.student_entry_count 
+        });
+      }
+      } catch (error) {
+        console.log('Error while fetching existing data: ', error)
+      }
+    }
+
+    fetchExistingData()
+  }, [])
+
   // ====================================
   // EVENT HANDLERS
   // ====================================
-  const handleNext = (): void => {
+  const handleNext = async() => {
+    // Check for percentage errors before proceeding
+    const hasErrors = Object.values(percentageErrors).some(error => error !== '');
+    if (hasErrors) {
+      alert('Please fix the percentage errors before proceeding.');
+      return;
+    }
+
+    if(currentSection === 0){
+      await insertData()
+    }
+
     setCompletedSections(prev => new Set([...prev, currentSection]));
     if (currentSection < sections.length - 1) {
       setCurrentSection(prev => prev + 1);
@@ -127,6 +284,14 @@ const OverallExitEntryForm: React.FC = () => {
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
+    
+    // Final validation check
+    const hasErrors = Object.values(percentageErrors).some(error => error !== '');
+    if (hasErrors) {
+      alert('Please fix all percentage errors before submitting.');
+      return;
+    }
+
     console.log('Overall Exit and Entry Form submitted:', formData);
     setSubmitted(true);
     
@@ -142,13 +307,14 @@ const OverallExitEntryForm: React.FC = () => {
 
   const resetForm = (): void => {
     setFormData({
-      // Reset to default values (0 for percentages)
-      overallStudentsExitPercentage: 0,
-      overallStudentsMultipleEntryPercentage: 0,
+      // Reset to default values (empty string)
+      overallStudentsExitPercentage: '',
+      overallStudentsMultipleEntryPercentage: '',
     });
     setSubmitted(false);
     setCurrentSection(0);
     setCompletedSections(new Set());
+    setPercentageErrors({});
   };
 
   // ====================================
@@ -157,10 +323,6 @@ const OverallExitEntryForm: React.FC = () => {
   
   // SECTION 0: OVERALL EXIT AND ENTRY DATA
   const renderOverallExitEntryData = (): JSX.Element => {
-    const exitRate = Number(formData.overallStudentsExitPercentage) || 0;
-    const entryRate = Number(formData.overallStudentsMultipleEntryPercentage) || 0;
-    const mobilityAssessment = getMobilityAssessment(exitRate, entryRate);
-
     return (
       <div className="form-section">
         <h2 className="section-title">Overall Exit and Entry Data</h2>
@@ -177,84 +339,6 @@ const OverallExitEntryForm: React.FC = () => {
             'overallStudentsMultipleEntryPercentage'
           )}
         </div>
-
-        {/* Live analytics summary */}
-        {(exitRate > 0 || entryRate > 0) && (
-          <div style={{ marginTop: '25px' }}>
-            <div style={{ 
-              padding: '15px', 
-              backgroundColor: '#f8f9fa', 
-              border: '1px solid #e9ecef', 
-              borderRadius: '6px'
-            }}>
-              <h4 style={{ margin: '0 0 12px 0', color: '#2c3e50', fontSize: '1.1rem' }}>
-                📊 Live Student Mobility Analysis
-              </h4>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                <div style={{ 
-                  padding: '10px', 
-                  backgroundColor: '#fff3cd', 
-                  border: '1px solid #ffeaa7', 
-                  borderRadius: '4px',
-                  textAlign: 'center'
-                }}>
-                  <strong style={{ color: '#856404' }}>Exit Rate</strong>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontWeight: 'bold', color: '#856404' }}>
-                    {exitRate.toFixed(2)}%
-                  </p>
-                </div>
-                
-                <div style={{ 
-                  padding: '10px', 
-                  backgroundColor: '#d1ecf1', 
-                  border: '1px solid #bee5eb', 
-                  borderRadius: '4px',
-                  textAlign: 'center'
-                }}>
-                  <strong style={{ color: '#0c5460' }}>Entry Rate</strong>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontWeight: 'bold', color: '#0c5460' }}>
-                    {entryRate.toFixed(2)}%
-                  </p>
-                </div>
-                
-                <div style={{ 
-                  padding: '10px', 
-                  backgroundColor: mobilityAssessment.color === '#28a745' ? '#d4edda' : 
-                                   mobilityAssessment.color === '#dc3545' ? '#f8d7da' : '#d1ecf1',
-                  border: `1px solid ${mobilityAssessment.color === '#28a745' ? '#c3e6cb' : 
-                                      mobilityAssessment.color === '#dc3545' ? '#f5c6cb' : '#bee5eb'}`,
-                  borderRadius: '4px',
-                  textAlign: 'center'
-                }}>
-                  <strong style={{ color: mobilityAssessment.color }}>Net Mobility</strong>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontWeight: 'bold', color: mobilityAssessment.color }}>
-                    {(entryRate - exitRate).toFixed(2)}%
-                  </p>
-                </div>
-              </div>
-              
-              <div style={{ 
-                marginTop: '12px', 
-                padding: '8px 12px', 
-                backgroundColor: mobilityAssessment.color === '#28a745' ? '#d4edda' : 
-                                 mobilityAssessment.color === '#dc3545' ? '#f8d7da' : '#d1ecf1',
-                border: `1px solid ${mobilityAssessment.color === '#28a745' ? '#c3e6cb' : 
-                                    mobilityAssessment.color === '#dc3545' ? '#f5c6cb' : '#bee5eb'}`,
-                borderRadius: '4px'
-              }}>
-                <p style={{ 
-                  margin: 0, 
-                  fontSize: '0.9rem', 
-                  color: mobilityAssessment.color,
-                  fontWeight: '500'
-                }}>
-                  <strong>Status: {mobilityAssessment.status}</strong> - {mobilityAssessment.description}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   };

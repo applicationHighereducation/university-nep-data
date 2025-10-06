@@ -4,6 +4,7 @@ import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
 import Page12 from '../pages/Page12';
 import { Header } from '@/components/Header';
+import axios from 'axios';
 
 // ====================================
 // TYPE DEFINITIONS
@@ -112,11 +113,86 @@ const UGExitOptionsForm: React.FC = () => {
     );
   };
 
+//API Calls
+
+const insertSection1 = async () => {
+  try {
+    const response = await axios.post('http://localhost:8000/api/page12/section1', {
+      ug_appear_1yr_count: formData.firstYearAppearedNumber,
+      ug_exit_1yr_percent: formData.firstYearExitPercentage,
+      ug_enter_2yr_count : formData.secondYearReEntryNumber,
+      ug_appear_2yr_count: formData.secondYearAppearedNumber,
+      ug_exit_2yr_percent: formData.secondYearExitPercentage
+    }, {withCredentials: true})
+
+    console.log(response.data.data)
+  } catch (error) {
+    console.log('Error while inserting data: ', error)
+  }
+}
+
+const insertSection2 = async () => {
+  try {
+    const response = await axios.post('http://localhost:8000/api/page12/section2', {
+        ug_enter_3yr_count: formData.thirdYearReEntryNumber,
+        ug_appear_3yr_count: formData.thirdYearAppearedNumber,
+        ug_exit_3yr_percent: formData.thirdYearExitPercentage,
+        ug_enter_4yr_percent: formData.fourthYearHonoursPercentage
+    }, {withCredentials: true})
+
+    console.log(response.data.data)
+  } catch (error) {
+    console.log('Error while inserting data: ', error)
+  }
+}
+
+
+useEffect(() => {
+  const fetchUGData = async () => {
+    try {
+      
+      const section1Response = await axios.get('http://localhost:8000/api/page12/section1', {withCredentials: true});
+      const section1Data = section1Response.data.data || {};
+     
+      const section2Response = await axios.get('http://localhost:8000/api/page12/section2', {withCredentials: true});
+      const section2Data = section2Response.data.data || {};
+
+     
+      setFormData(prev => ({
+        ...prev,
+        firstYearAppearedNumber: section1Data.ug_appear_1yr_count || 0,
+        firstYearExitPercentage: section1Data.ug_exit_1yr_percent || 0,
+        secondYearReEntryNumber: section1Data.ug_enter_2yr_count || 0,
+        secondYearAppearedNumber: section1Data.ug_appear_2yr_count || 0,
+        secondYearExitPercentage: section1Data.ug_exit_2yr_percent || 0,
+        thirdYearReEntryNumber: section2Data.ug_enter_3yr_count || 0,
+        thirdYearAppearedNumber: section2Data.ug_appear_3yr_count || 0,
+        thirdYearExitPercentage: section2Data.ug_exit_3yr_percent || 0,
+        fourthYearHonoursPercentage: section2Data.ug_enter_4yr_percent || 0
+      }));
+
+    } catch (error) {
+      console.error('Error fetching UG data:', error);
+    }
+  };
+
+  fetchUGData();
+}, []);
+
+
+
   // ====================================
   // EVENT HANDLERS
   // ====================================
-  const handleNext = (): void => {
+  const handleNext = async() => {
     setCompletedSections(prev => new Set([...prev, currentSection]));
+
+    if(currentSection === 0){
+      await insertSection1()
+    } else if (currentSection === 1){
+      await insertSection2()
+    }
+
     if (currentSection < sections.length - 1) {
       setCurrentSection(prev => prev + 1);
     }
