@@ -4,13 +4,18 @@ import asyncHandler from "./asyncHandler.js";
 import ApiError from "./ApiError.js";
 import ApiResponse from "./ApiResponse.js";
 import pool from "../config/db.js";
+import getCurrentSession from "./generateSession.js";
 
 const importData = asyncHandler(async (req, res) => {
-  if (!req.files || !req.files['file'] || req.files['file'].length === 0) {
+  const { u_id } = req.user;
+  const session = getCurrentSession();
+
+
+  if (!req.file) {
     throw new ApiError(400, 'No file uploaded');
   }
 
-  const excelLocalePath = req.files['file'][0].path;
+  const excelLocalePath = req.file.path; 
   const workbook = XLSX.readFile(excelLocalePath);
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
@@ -20,11 +25,10 @@ const importData = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Excel file is empty");
   }
 
-  
   for (const row of rows) {
     await pool.query(
-      "INSERT INTO master_data (course_name, faculty) VALUES ($1, $2)",
-      [row.course_name, row.faculty]
+      "INSERT INTO incubation_recognition (u_id, session, agency_name, agency_type) VALUES ($1, $2, $3, $4)",
+      [u_id, session, row.agency_name, row.agency_type]
     );
   }
 

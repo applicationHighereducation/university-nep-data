@@ -1,9 +1,10 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent, useEffect } from 'react';
 import './Form1.css';
 import FormHeader from '../components/FormHeader';
 import PageNavigationSubheader from '../components/FormSubheader';
 import Page11 from '../pages/Page11';
 import { Header } from '@/components/Header';
+import axios from 'axios';
 
 // ====================================
 // TYPE DEFINITIONS
@@ -64,6 +65,67 @@ const ABCRegistrationForm: React.FC = () => {
     { id: 2, title: "Review", description: "Review all information before submission", fields: [] },
     { id: 3, title: "Submit", description: "Final submission", fields: [] }
   ];
+
+  // ====================================
+  // AUTO-CALCULATION EFFECTS
+  // ====================================
+  
+  // Auto-calculate: Students registered on ABC - Percentage
+  useEffect(() => {
+    const totalStudents = Number(formData.totalStudentsHei) || 0;
+    const registeredStudents = Number(formData.studentsRegisteredAbc) || 0;
+    
+    if (totalStudents > 0) {
+      const percentage = (registeredStudents / totalStudents) * 100;
+      setFormData(prev => ({
+        ...prev,
+        studentsRegisteredAbcPercentage: Number(percentage.toFixed(2))
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        studentsRegisteredAbcPercentage: 0
+      }));
+    }
+  }, [formData.totalStudentsHei, formData.studentsRegisteredAbc]);
+
+  // Auto-calculate: Students with uploads - % of registered
+  useEffect(() => {
+    const registeredStudents = Number(formData.studentsRegisteredAbc) || 0;
+    const studentsWithUploads = Number(formData.studentsWithUploadsAbc) || 0;
+    
+    if (registeredStudents > 0) {
+      const percentage = (studentsWithUploads / registeredStudents) * 100;
+      setFormData(prev => ({
+        ...prev,
+        studentsWithUploadsAbcPercentage: Number(percentage.toFixed(2))
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        studentsWithUploadsAbcPercentage: 0
+      }));
+    }
+  }, [formData.studentsRegisteredAbc, formData.studentsWithUploadsAbc]);
+
+  // Auto-calculate: ABC-registered students without uploads - % of registered
+  useEffect(() => {
+    const registeredStudents = Number(formData.studentsRegisteredAbc) || 0;
+    const studentsWithoutUploads = Number(formData.abcStudentsWithoutUploads) || 0;
+    
+    if (registeredStudents > 0) {
+      const percentage = (studentsWithoutUploads / registeredStudents) * 100;
+      setFormData(prev => ({
+        ...prev,
+        abcStudentsWithoutUploadsPercentage: Number(percentage.toFixed(2))
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        abcStudentsWithoutUploadsPercentage: 0
+      }));
+    }
+  }, [formData.studentsRegisteredAbc, formData.abcStudentsWithoutUploads]);
 
   // ====================================
   // UTILITY FUNCTIONS
@@ -139,7 +201,8 @@ const ABCRegistrationForm: React.FC = () => {
   const renderNumberInput = (
     label: string,
     field: keyof FormData,
-    required = false
+    required = false,
+    readonly = false
   ): JSX.Element => {
     const hasFieldError = hasError(field);
     const errorMessage = getErrorMessage(field);
@@ -151,10 +214,22 @@ const ABCRegistrationForm: React.FC = () => {
         </label>
         <input
           type="number"
-          className={`input ${hasFieldError ? 'input-error' : ''}`}
+          className={`input ${hasFieldError ? 'input-error' : ''} ${readonly ? 'input-readonly' : ''}`}
           value={formData[field]}
           onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : e.target.value)}
+          onFocus={(e) => {
+            if (!readonly && Number(e.target.value) === 0) {
+              e.target.value = '';
+            }
+          }}
+          onBlur={(e) => {
+            if (!readonly && e.target.value === '') {
+              updateFormData(field, 0);
+            }
+          }}
           min="0"
+          readOnly={readonly}
+          style={readonly ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
         />
         {hasFieldError && (
           <div style={{ 
@@ -169,6 +244,16 @@ const ABCRegistrationForm: React.FC = () => {
             {errorMessage}
           </div>
         )}
+        {readonly && (
+          <div style={{ 
+            color: '#6c757d', 
+            fontSize: '0.75rem', 
+            marginTop: '4px',
+            fontStyle: 'italic'
+          }}>
+            Auto-calculated
+          </div>
+        )}
       </div>
     );
   };
@@ -177,7 +262,8 @@ const ABCRegistrationForm: React.FC = () => {
   const renderDecimalInput = (
     label: string,
     field: keyof FormData,
-    required = false
+    required = false,
+    readonly = false
   ): JSX.Element => {
     return (
       <div className="form-group">
@@ -186,17 +272,82 @@ const ABCRegistrationForm: React.FC = () => {
         </label>
         <input
           type="number"
-          className="input"
+          className={`input ${readonly ? 'input-readonly' : ''}`}
           value={formData[field]}
           onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : e.target.value)}
+          onFocus={(e) => {
+            if (!readonly && Number(e.target.value) === 0) {
+              e.target.value = '';
+            }
+          }}
+          onBlur={(e) => {
+            if (!readonly && e.target.value === '') {
+              updateFormData(field, 0);
+            }
+          }}
           min="0"
           max="100"
           step="0.01"
+          readOnly={readonly}
+          style={readonly ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
         />
+        {readonly && (
+          <div style={{ 
+            color: '#6c757d', 
+            fontSize: '0.75rem', 
+            marginTop: '4px',
+            fontStyle: 'italic'
+          }}>
+            Auto-calculated
+          </div>
+        )}
       </div>
     );
   };
 
+  //API Handling
+
+  const insertData = async() => {
+    try {
+      const response = await axios.post('http://localhost:8000/api/page11/insert', {
+        total : formData.totalStudentsHei,
+        registeredStudents: formData.studentsRegisteredAbc,
+        uploadedStudents : formData.studentsWithUploadsAbc,
+        moocCnt: formData.externalMoocsCreditsViaAbc,
+        moocManualCnt: formData.externalMoocsCreditsManual
+      }, {withCredentials: true})
+    } catch (error) {
+      console.log('Error while inserting data: ', error)
+    }
+  }
+
+
+  useEffect(() => {
+    const fetchData = async() => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/page11/get', {withCredentials: true})
+        const existingData = response.data.data
+        console.log(existingData)
+        console.log()
+
+        setFormData({
+          totalStudentsHei: existingData.total_students,
+          studentsRegisteredAbc: existingData.registered_count,
+          studentsWithUploadsAbc: existingData.upload_count,
+          externalMoocsCreditsViaAbc: existingData.mooc_abc_count,
+          externalMoocsCreditsManual: existingData.mooc_manual_count,
+          abcStudentsWithoutUploads: Number(existingData.registered_count)-Number(existingData.upload_count),
+          studentsRegisteredAbcPercentage: Number(),
+          abcStudentsWithoutUploadsPercentage: Number(),
+          studentsWithUploadsAbcPercentage: Number()
+        })
+      } catch (error) {
+        console.log('Error while fetching already existing data: ', error)
+      }
+    }
+
+    fetchData()
+  }, [])
   // ====================================
   // EVENT HANDLERS
   // ====================================
@@ -220,7 +371,7 @@ const ABCRegistrationForm: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     // Final validation before submission
@@ -230,10 +381,13 @@ const ABCRegistrationForm: React.FC = () => {
       alert('Please fix validation errors before submitting.');
       return;
     }
+
+    await insertData()
     
     console.log('ABC Registration Form submitted:', formData);
     setSubmitted(true);
     
+
     // Show popup and redirect after delay
     setTimeout(() => {
       window.location.href = '/form/page12';
@@ -278,10 +432,10 @@ const ABCRegistrationForm: React.FC = () => {
         <div></div>
         
         {renderNumberInput('Students registered on ABC - Number', 'studentsRegisteredAbc', true)}
-        {renderDecimalInput('Students registered on ABC - Percentage', 'studentsRegisteredAbcPercentage')}
+        {renderDecimalInput('Students registered on ABC - Percentage', 'studentsRegisteredAbcPercentage', false, true)}
         
         {renderNumberInput('Students with Results/DMCs/Course Credits uploaded on ABC - Number', 'studentsWithUploadsAbc')}
-        {renderDecimalInput('Students with Results/DMCs/Course Credits uploaded on ABC - % of registered', 'studentsWithUploadsAbcPercentage')}
+        {renderDecimalInput('Students with Results/DMCs/Course Credits uploaded on ABC - % of registered', 'studentsWithUploadsAbcPercentage', false, true)}
       </div>
     </div>
   );
@@ -294,7 +448,7 @@ const ABCRegistrationForm: React.FC = () => {
 
       <div className="form-grid">
         {renderNumberInput('ABC - registered students without uploads - Number', 'abcStudentsWithoutUploads')}
-        {renderDecimalInput('ABC-registered students without uploads - % of registered', 'abcStudentsWithoutUploadsPercentage')}
+        {renderDecimalInput('ABC-registered students without uploads - % of registered', 'abcStudentsWithoutUploadsPercentage', false, true)}
         
         {renderNumberInput('Students whose external/MOOCs credits counted via ABC - Number', 'externalMoocsCreditsViaAbc')}
         {renderNumberInput('Students whose external/MOOCs credits counted manually - Number', 'externalMoocsCreditsManual')}

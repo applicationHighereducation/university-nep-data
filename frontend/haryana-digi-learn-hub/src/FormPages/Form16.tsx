@@ -8,28 +8,14 @@ import { Header } from '@/components/Header';
 // ====================================
 // TYPE DEFINITIONS
 // ====================================
-interface ActivityDetail {
-  id: string;
-  name: string;
-}
-
-interface WorkshopDetail {
-  id: string;
-  name: string;
-  outcomes: string;
-}
-
 interface FormData {
   // Section 1: R&D Cell Details
   hasRDCell: 'Yes' | 'No' | '';
-  yearOfEstablishment: string | number;
-  rdcComposition: string;
+  yearOfEstablishment: string;
   researchActivitiesNumber: string | number;
-  researchActivitiesList: ActivityDetail[];
   workshopsNumber: string | number;
-  workshopsList: WorkshopDetail[];
   researchProposalsNumber: string | number;
-  researchProposalsList: ActivityDetail[];
+  rdcDocumentPdf: File | null;
 }
 
 interface Section {
@@ -44,6 +30,11 @@ interface ValidationError {
   message: string;
 }
 
+interface UploadedFile {
+  file: File;
+  selected: boolean;
+}
+
 // ====================================
 // MAIN COMPONENT
 // ====================================
@@ -52,18 +43,16 @@ const RnDCellForm: React.FC = () => {
   const [completedSections, setCompletedSections] = useState<Set<number>>(new Set());
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+  const [showYearPicker, setShowYearPicker] = useState<boolean>(false);
   
   const [formData, setFormData] = useState<FormData>({
-    // Default values
     hasRDCell: '',
-    yearOfEstablishment: 0,
-    rdcComposition: '',
+    yearOfEstablishment: '',
     researchActivitiesNumber: 0,
-    researchActivitiesList: [],
     workshopsNumber: 0,
-    workshopsList: [],
     researchProposalsNumber: 0,
-    researchProposalsList: [],
+    rdcDocumentPdf: null,
   });
 
   // Define sections
@@ -78,22 +67,13 @@ const RnDCellForm: React.FC = () => {
   // ====================================
   const validateData = (updatedData: FormData): ValidationError[] => {
     const errors: ValidationError[] = [];
-    const currentYear = new Date().getFullYear();
-    const year = Number(updatedData.yearOfEstablishment);
 
-    // Validation: Year constraints
-    if (updatedData.hasRDCell === 'Yes' && year > 0) {
-      if (year > currentYear) {
-        errors.push({
-          field: 'yearOfEstablishment',
-          message: 'Year of establishment cannot be in the future'
-        });
-      } else if (year < 1800) {
-        errors.push({
-          field: 'yearOfEstablishment',
-          message: 'Year of establishment cannot be before 1800'
-        });
-      }
+    // Validation: hasRDCell is required
+    if (!updatedData.hasRDCell) {
+      errors.push({
+        field: 'hasRDCell',
+        message: 'Please select whether you have an R&D Cell'
+      });
     }
 
     return errors;
@@ -111,22 +91,6 @@ const RnDCellForm: React.FC = () => {
     });
   };
 
-  const generateId = (): string => {
-    return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  };
-
-  // Function to get the maximum allowed entries for a list field
-  const getMaxEntries = (numberField: keyof FormData): number => {
-    return Number(formData[numberField]) || 0;
-  };
-
-  // Function to check if more entries can be added
-  const canAddMoreEntries = (listField: keyof FormData, numberField: keyof FormData): boolean => {
-    const currentList = formData[listField] as (ActivityDetail[] | WorkshopDetail[]);
-    const maxEntries = getMaxEntries(numberField);
-    return currentList.length < maxEntries;
-  };
-
   // Check if a field has validation errors
   const hasError = (fieldName: string): boolean => {
     return validationErrors.some(error => error.field === fieldName);
@@ -138,60 +102,154 @@ const RnDCellForm: React.FC = () => {
     return error ? error.message : '';
   };
 
-  // Functions for activity details
-  const addActivityDetail = (listField: keyof FormData, numberField: keyof FormData): void => {
-    if (!canAddMoreEntries(listField, numberField)) return;
+  // ====================================
+  // FILE UPLOAD HANDLERS
+  // ====================================
+  const handleFileSelect = (file: File): void => {
+    // Validate file type
+    const fileName = file.name.toLowerCase();
+    const isValid = fileName.endsWith('.pdf');
     
-    const newActivity: ActivityDetail = {
-      id: generateId(),
-      name: ''
-    };
-    const currentList = (formData[listField] as ActivityDetail[]) || [];
-    updateFormData(listField, [...currentList, newActivity]);
+    if (!isValid) {
+      alert('Invalid file type. Please upload only PDF files.');
+      return;
+    }
+
+    setUploadedFile({ file, selected: true });
   };
 
-  const updateActivityDetail = (listField: keyof FormData, id: string, value: string): void => {
-    const currentList = (formData[listField] as ActivityDetail[]) || [];
-    const updatedList = currentList.map(item => 
-      item.id === id ? { ...item, name: value } : item
-    );
-    updateFormData(listField, updatedList);
-  };
-
-  const removeActivityDetail = (listField: keyof FormData, id: string): void => {
-    const currentList = (formData[listField] as ActivityDetail[]) || [];
-    updateFormData(listField, currentList.filter(item => item.id !== id));
-  };
-
-  // Functions for workshop details
-  const addWorkshopDetail = (): void => {
-    if (!canAddMoreEntries('workshopsList', 'workshopsNumber')) return;
+  const handleFileRemove = (): void => {
+    setUploadedFile(null);
+    updateFormData('rdcDocumentPdf', null);
     
-    const newWorkshop: WorkshopDetail = {
-      id: generateId(),
-      name: '',
-      outcomes: ''
-    };
-    updateFormData('workshopsList', [...formData.workshopsList, newWorkshop]);
+    // Reset the file input
+    const fileInput = document.getElementById('file-upload-rdc') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
-  const updateWorkshopDetail = (id: string, field: string, value: string): void => {
-    const updatedList = formData.workshopsList.map(item => 
-      item.id === id ? { ...item, [field]: value } : item
+  const handleFileUpload = (): void => {
+    if (uploadedFile && uploadedFile.selected) {
+      setUploadedFile({ ...uploadedFile, selected: false });
+      updateFormData('rdcDocumentPdf', uploadedFile.file);
+      alert(`File "${uploadedFile.file.name}" uploaded successfully!`);
+    }
+  };
+
+  // ====================================
+  // YEAR PICKER COMPONENT
+  // ====================================
+  const YearPicker: React.FC<{
+    value: string;
+    onChange: (year: string) => void;
+  }> = ({ value, onChange }) => {
+    const currentYear = new Date().getFullYear();
+    const [searchTerm, setSearchTerm] = useState('');
+    const startYear = 1500;
+    
+    // Generate years array (only up to current year)
+    const years = Array.from(
+      { length: currentYear - startYear + 1 }, 
+      (_, i) => currentYear - i
     );
-    updateFormData('workshopsList', updatedList);
+
+    // Filter years based on search
+    const filteredYears = searchTerm 
+      ? years.filter(year => year.toString().includes(searchTerm))
+      : years;
+
+    return (
+      <div style={{
+        position: 'absolute',
+        top: '100%',
+        left: 0,
+        right: 0,
+        backgroundColor: 'white',
+        border: '1px solid #ced4da',
+        borderRadius: '4px',
+        marginTop: '4px',
+        maxHeight: '300px',
+        overflowY: 'auto',
+        zIndex: 1000,
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{ 
+          position: 'sticky', 
+          top: 0, 
+          backgroundColor: 'white', 
+          padding: '10px',
+          borderBottom: '1px solid #ced4da'
+        }}>
+          <input
+            type="text"
+            placeholder="Search year..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px',
+              border: '1px solid #ced4da',
+              borderRadius: '4px',
+              fontSize: '0.9rem'
+            }}
+            autoFocus
+          />
+        </div>
+        <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+          {filteredYears.length > 0 ? (
+            filteredYears.map(year => (
+              <div
+                key={year}
+                onClick={() => {
+                  onChange(year.toString());
+                  setShowYearPicker(false);
+                  setSearchTerm('');
+                }}
+                style={{
+                  padding: '10px 15px',
+                  cursor: 'pointer',
+                  backgroundColor: value === year.toString() ? '#e7f3ff' : 'white',
+                  borderBottom: '1px solid #f0f0f0',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (value !== year.toString()) {
+                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (value !== year.toString()) {
+                    e.currentTarget.style.backgroundColor = 'white';
+                  }
+                }}
+              >
+                {year}
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: '15px', textAlign: 'center', color: '#6c757d' }}>
+              No years found
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
-  const removeWorkshopDetail = (id: string): void => {
-    updateFormData('workshopsList', formData.workshopsList.filter(item => item.id !== id));
-  };
-
+  // ====================================
+  // COMPONENT RENDERERS
+  // ====================================
+  
   // Component for rendering Yes/No radio buttons
   const renderYesNoRadio = (
     label: string,
     field: keyof FormData,
     required = false
   ): JSX.Element => {
+    const hasFieldError = hasError(field);
+    const errorMessage = getErrorMessage(field);
+
     return (
       <div className="form-group form-group-full">
         <label className="label">
@@ -221,32 +279,6 @@ const RnDCellForm: React.FC = () => {
             No
           </label>
         </div>
-      </div>
-    );
-  };
-
-  // Component for rendering number input
-  const renderNumberInput = (
-    label: string,
-    field: keyof FormData,
-    required = false
-  ): JSX.Element => {
-    const hasFieldError = hasError(field);
-    const errorMessage = getErrorMessage(field);
-
-    return (
-      <div className="form-group form-group-full">
-        <label className="label">
-          {label} {required && <span className="required">*</span>}
-        </label>
-        <input
-          type="number"
-          className={`input ${hasFieldError ? 'input-error' : ''}`}
-          value={typeof formData[field] === 'string' || typeof formData[field] === 'number' ? formData[field] : ''}
-          onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : e.target.value)}
-          min="0"
-          max={field === 'yearOfEstablishment' ? new Date().getFullYear() : undefined}
-        />
         {hasFieldError && (
           <div style={{ 
             color: '#dc3545', 
@@ -264,11 +296,10 @@ const RnDCellForm: React.FC = () => {
     );
   };
 
-  // Component for rendering textarea
-  const renderTextarea = (
+  // Component for rendering year picker input
+  const renderYearPickerInput = (
     label: string,
     field: keyof FormData,
-    placeholder: string,
     required = false
   ): JSX.Element => {
     return (
@@ -276,291 +307,228 @@ const RnDCellForm: React.FC = () => {
         <label className="label">
           {label} {required && <span className="required">*</span>}
         </label>
-        <textarea
+        <div style={{ position: 'relative' }}>
+          <input
+            type="text"
+            className="input"
+            value={formData[field] as string}
+            onClick={() => setShowYearPicker(true)}
+            readOnly
+            placeholder={`Select year (1500 - ${new Date().getFullYear()})`}
+            style={{ cursor: 'pointer' }}
+          />
+          {showYearPicker && (
+            <>
+              <div 
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 999
+                }}
+                onClick={() => setShowYearPicker(false)}
+              />
+              <YearPicker 
+                value={formData[field] as string}
+                onChange={(year) => updateFormData(field, year)}
+              />
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Component for rendering number input (clears on focus)
+  const renderNumberInput = (
+    label: string,
+    field: keyof FormData,
+    required = false
+  ): JSX.Element => {
+    return (
+      <div className="form-group form-group-full">
+        <label className="label">
+          {label} {required && <span className="required">*</span>}
+        </label>
+        <input
+          type="number"
           className="input"
-          value={formData[field] as string}
-          onChange={(e) => updateFormData(field, e.target.value)}
-          placeholder={placeholder}
-          rows={4}
-          style={{ resize: 'vertical' }}
+          value={
+            typeof formData[field] === 'string' || typeof formData[field] === 'number'
+              ? (formData[field] === 0 ? '' : formData[field])
+              : ''
+          }
+          onChange={(e) => updateFormData(field, e.target.value === '' ? 0 : Number(e.target.value))}
+          onFocus={(e) => {
+            if (formData[field] === 0) {
+              updateFormData(field, '');
+            }
+          }}
+          onBlur={(e) => {
+            if (e.target.value === '') {
+              updateFormData(field, 0);
+            }
+          }}
+          min="0"
+          placeholder="Enter number"
         />
       </div>
     );
   };
 
-  // Component for rendering activity list with constraints and proper view
-  const renderActivityList = (
-    label: string,
-    listField: keyof FormData,
-    numberField: keyof FormData,
-    placeholder: string
-  ): JSX.Element => {
-    const activities = (formData[listField] as ActivityDetail[]) || [];
-    const maxEntries = getMaxEntries(numberField);
-    const canAddMore = canAddMoreEntries(listField, numberField);
-    
+  // Component for PDF upload
+  const renderPdfUpload = (): JSX.Element => {
+    const fileSelected = uploadedFile && uploadedFile.selected;
+    const fileUploaded = uploadedFile && !uploadedFile.selected;
+
     return (
       <div className="form-group form-group-full">
-        <label className="label">
-          {label}
-          <span style={{ fontSize: '0.9rem', color: '#6c757d', marginLeft: '10px' }}>
-            ({activities.length}/{maxEntries} entries)
-          </span>
-        </label>
+        <label className="label">R&D Cell Activities Document (Upload PDF)</label>
         
-        {maxEntries > 0 ? (
-          <div style={{ marginTop: '10px' }}>
-            {/* Input Area */}
-            <div style={{ marginBottom: '20px' }}>
-              {activities.map((activity, index) => (
-                <div key={activity.id} style={{ marginBottom: '10px', display: 'flex', gap: '10px', alignItems: 'center' }}>
-                  <span style={{ minWidth: '30px', color: '#6c757d' }}>{index + 1}.</span>
-                  <input
-                    type="text"
-                    className="input"
-                    value={activity.name}
-                    onChange={(e) => updateActivityDetail(listField, activity.id, e.target.value)}
-                    placeholder={placeholder}
-                    style={{ flex: 1 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeActivityDetail(listField, activity.id)}
-                    className="btn btn-secondary"
-                    style={{ padding: '8px 15px', fontSize: '0.9rem' }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-              
-              {canAddMore ? (
-                <button
-                  type="button"
-                  onClick={() => addActivityDetail(listField, numberField)}
-                  className="btn btn-primary"
-                  style={{ marginTop: '10px' }}
-                >
-                  Add Item ({activities.length}/{maxEntries})
-                </button>
-              ) : (
-                <div style={{ 
-                  marginTop: '10px', 
-                  padding: '8px 12px', 
-                  backgroundColor: '#fff3cd', 
-                  border: '1px solid #ffeaa7', 
-                  borderRadius: '4px',
-                  fontSize: '0.9rem',
-                  color: '#856404'
-                }}>
-                  Maximum {maxEntries} entries reached. Remove an entry to add a new one.
-                </div>
-              )}
-            </div>
+        
 
-            {/* List View */}
-            {activities.length > 0 && (
-              <div style={{ 
-                marginTop: '20px', 
-                padding: '15px', 
-                backgroundColor: '#f8f9fa', 
-                border: '1px solid #dee2e6', 
-                borderRadius: '6px' 
-              }}>
-                <h5 style={{ margin: '0 0 10px 0', color: '#495057', fontSize: '1rem' }}>
-                  📋 Current Entries ({activities.length})
-                </h5>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {activities.map((activity, index) => (
-                    <div key={activity.id} style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      padding: '8px 12px', 
-                      backgroundColor: '#ffffff', 
-                      border: '1px solid #e9ecef', 
-                      borderRadius: '4px',
-                      fontSize: '0.9rem'
-                    }}>
-                      <span style={{ 
-                        minWidth: '25px', 
-                        color: '#6c757d', 
-                        fontWeight: 'bold' 
-                      }}>
-                        {index + 1}.
-                      </span>
-                      <span style={{ flex: 1, color: '#495057' }}>
-                        {activity.name || <em style={{ color: '#6c757d' }}>No name entered</em>}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* File Selection/Upload Section */}
+        {!uploadedFile ? (
+          // No file selected - show choose file button
+          <div>
+            <input
+              type="file"
+              id="file-upload-rdc"
+              accept=".pdf"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleFileSelect(file);
+                }
+              }}
+              style={{ display: 'none' }}
+            />
+            <label
+              htmlFor="file-upload-rdc"
+              style={{
+                display: 'inline-block',
+                padding: '10px 20px',
+                backgroundColor: '#6c757d',
+                color: 'white',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.95rem',
+                fontWeight: '500',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#5a6268'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6c757d'}
+            >
+              📁 Choose PDF File
+            </label>
           </div>
-        ) : (
-          <div style={{ 
-            marginTop: '10px',
-            padding: '12px', 
-            backgroundColor: '#f8f9fa', 
-            border: '1px solid #dee2e6', 
-            borderRadius: '4px',
-            fontSize: '0.9rem',
-            color: '#6c757d'
+        ) : fileSelected ? (
+          // File selected but not uploaded yet - show file info with upload/remove buttons
+          <div style={{
+            padding: '12px',
+            backgroundColor: '#fff3cd',
+            border: '1px solid #ffc107',
+            borderRadius: '4px'
           }}>
-            Please enter a number greater than 0 in the corresponding number field to add entries.
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Component for rendering workshop list with outcomes, constraints and proper view
-  const renderWorkshopList = (): JSX.Element => {
-    const maxEntries = getMaxEntries('workshopsNumber');
-    const canAddMore = canAddMoreEntries('workshopsList', 'workshopsNumber');
-    
-    return (
-      <div className="form-group form-group-full">
-        <label className="label">
-          Workshops by RDC (projects, industry linkages, publications, consultancy) - List + Outcomes
-          <span style={{ fontSize: '0.9rem', color: '#6c757d', marginLeft: '10px' }}>
-            ({formData.workshopsList.length}/{maxEntries} entries)
-          </span>
-        </label>
-        
-        {maxEntries > 0 ? (
-          <div style={{ marginTop: '10px' }}>
-            {/* Input Area */}
-            <div style={{ marginBottom: '20px' }}>
-              {formData.workshopsList.map((workshop, index) => (
-                <div key={workshop.id} style={{ marginBottom: '15px', padding: '15px', border: '1px solid #dee2e6', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <strong style={{ color: '#495057' }}>Workshop {index + 1}</strong>
-                    <button
-                      type="button"
-                      onClick={() => removeWorkshopDetail(workshop.id)}
-                      className="btn btn-secondary"
-                      style={{ padding: '5px 15px', fontSize: '0.9rem' }}
-                    >
-                      Remove
-                    </button>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.5rem' }}>📄</span>
+                <div>
+                  <div style={{ fontWeight: '500', color: '#856404' }}>
+                    {uploadedFile.file.name}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div>
-                      <label className="label" style={{ fontSize: '0.9rem', marginBottom: '5px' }}>Workshop Name/Topic</label>
-                      <input
-                        type="text"
-                        className="input"
-                        value={workshop.name}
-                        onChange={(e) => updateWorkshopDetail(workshop.id, 'name', e.target.value)}
-                        placeholder="Enter workshop name (e.g., Industry Linkage Workshop, Research Publication Training)"
-                      />
-                    </div>
-                    <div>
-                      <label className="label" style={{ fontSize: '0.9rem', marginBottom: '5px' }}>Outcomes</label>
-                      <textarea
-                        className="input"
-                        value={workshop.outcomes}
-                        onChange={(e) => updateWorkshopDetail(workshop.id, 'outcomes', e.target.value)}
-                        placeholder="Describe outcomes (e.g., 5 new industry collaborations, 10 papers published, 3 consultancy projects initiated)"
-                        rows={3}
-                        style={{ resize: 'vertical' }}
-                      />
-                    </div>
+                  <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
+                    {(uploadedFile.file.size / 1024).toFixed(2)} KB
                   </div>
                 </div>
-              ))}
-              
-              {canAddMore ? (
-                <button
-                  type="button"
-                  onClick={addWorkshopDetail}
-                  className="btn btn-primary"
-                  style={{ marginTop: '10px' }}
-                >
-                  Add Workshop ({formData.workshopsList.length}/{maxEntries})
-                </button>
-              ) : (
-                <div style={{ 
-                  marginTop: '10px', 
-                  padding: '8px 12px', 
-                  backgroundColor: '#fff3cd', 
-                  border: '1px solid #ffeaa7', 
-                  borderRadius: '4px',
-                  fontSize: '0.9rem',
-                  color: '#856404'
-                }}>
-                  Maximum {maxEntries} workshops reached. Remove a workshop to add a new one.
-                </div>
-              )}
-            </div>
-
-            {/* List View */}
-            {formData.workshopsList.length > 0 && (
-              <div style={{ 
-                marginTop: '20px', 
-                padding: '15px', 
-                backgroundColor: '#f8f9fa', 
-                border: '1px solid #dee2e6', 
-                borderRadius: '6px' 
-              }}>
-                <h5 style={{ margin: '0 0 15px 0', color: '#495057', fontSize: '1rem' }}>
-                  🎯 Current Workshop Entries ({formData.workshopsList.length})
-                </h5>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {formData.workshopsList.map((workshop, index) => (
-                    <div key={workshop.id} style={{ 
-                      padding: '12px', 
-                      backgroundColor: '#ffffff', 
-                      border: '1px solid #e9ecef', 
-                      borderRadius: '6px',
-                      fontSize: '0.9rem'
-                    }}>
-                      <div style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        marginBottom: '8px',
-                        borderBottom: '1px solid #f1f3f4',
-                        paddingBottom: '6px'
-                      }}>
-                        <span style={{ 
-                          minWidth: '25px', 
-                          color: '#6c757d', 
-                          fontWeight: 'bold' 
-                        }}>
-                          {index + 1}.
-                        </span>
-                        <strong style={{ color: '#495057' }}>
-                          {workshop.name || <em style={{ color: '#6c757d' }}>No workshop name entered</em>}
-                        </strong>
-                      </div>
-                      <div style={{ marginLeft: '25px' }}>
-                        <strong style={{ color: '#6c757d', fontSize: '0.8rem' }}>Outcomes:</strong>
-                        <div style={{ 
-                          marginTop: '4px', 
-                          color: '#495057',
-                          lineHeight: '1.4'
-                        }}>
-                          {workshop.outcomes || <em style={{ color: '#6c757d' }}>No outcomes entered</em>}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
-            )}
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={handleFileUpload}
+                style={{
+                  flex: 1,
+                  padding: '8px 16px',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#218838'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#28a745'}
+              >
+                📤 Upload
+              </button>
+              <button
+                type="button"
+                onClick={handleFileRemove}
+                style={{
+                  flex: 1,
+                  padding: '8px 16px',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: '500',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#c82333'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#dc3545'}
+              >
+                🗑️ Remove
+              </button>
+            </div>
           </div>
         ) : (
-          <div style={{ 
-            marginTop: '10px',
-            padding: '12px', 
-            backgroundColor: '#f8f9fa', 
-            border: '1px solid #dee2e6', 
+          // File uploaded - show success message with remove button
+          <div style={{
+            padding: '12px',
+            backgroundColor: '#d4edda',
+            border: '1px solid #c3e6cb',
             borderRadius: '4px',
-            fontSize: '0.9rem',
-            color: '#6c757d'
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
           }}>
-            Please enter a number greater than 0 in the workshops number field to add entries.
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.5rem' }}>✅</span>
+              <div>
+                <div style={{ fontWeight: '500', color: '#155724' }}>
+                  {uploadedFile.file.name}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: '#6c757d' }}>
+                  {(uploadedFile.file.size / 1024).toFixed(2)} KB - Uploaded Successfully
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleFileRemove}
+              style={{
+                padding: '6px 16px',
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#c82333'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#dc3545'}
+            >
+              🗑️ Remove
+            </button>
           </div>
         )}
       </div>
@@ -571,6 +539,21 @@ const RnDCellForm: React.FC = () => {
   // EVENT HANDLERS
   // ====================================
   const handleNext = (): void => {
+    // Check if hasRDCell is selected
+    if (currentSection === 0 && !formData.hasRDCell) {
+      setValidationErrors([{
+        field: 'hasRDCell',
+        message: 'Please select whether you have an R&D Cell'
+      }]);
+      return;
+    }
+
+    // If user selected "No" for R&D Cell, redirect to next form
+    if (currentSection === 0 && formData.hasRDCell === 'No') {
+      window.location.href = '/form/page17';
+      return;
+    }
+
     setCompletedSections(prev => new Set([...prev, currentSection]));
     if (currentSection < sections.length - 1) {
       setCurrentSection(prev => prev + 1);
@@ -602,6 +585,7 @@ const RnDCellForm: React.FC = () => {
     }
     
     console.log('R&D Cell Form submitted:', formData);
+    console.log('Uploaded PDF:', uploadedFile);
     setSubmitted(true);
     
     setTimeout(() => {
@@ -615,50 +599,19 @@ const RnDCellForm: React.FC = () => {
 
   const resetForm = (): void => {
     setFormData({
-      // Reset to default values
       hasRDCell: '',
-      yearOfEstablishment: 0,
-      rdcComposition: '',
+      yearOfEstablishment: '',
       researchActivitiesNumber: 0,
-      researchActivitiesList: [],
       workshopsNumber: 0,
-      workshopsList: [],
       researchProposalsNumber: 0,
-      researchProposalsList: [],
+      rdcDocumentPdf: null,
     });
     setSubmitted(false);
     setCurrentSection(0);
     setCompletedSections(new Set());
     setValidationErrors([]);
+    setUploadedFile(null);
   };
-
-  // ====================================
-  // EFFECTS
-  // ====================================
-  // Effects to handle list trimming when numbers are reduced
-  useEffect(() => {
-    const maxEntries = Number(formData.researchActivitiesNumber) || 0;
-    const currentList = formData.researchActivitiesList;
-    if (currentList.length > maxEntries) {
-      updateFormData('researchActivitiesList', currentList.slice(0, maxEntries));
-    }
-  }, [formData.researchActivitiesNumber]);
-
-  useEffect(() => {
-    const maxEntries = Number(formData.workshopsNumber) || 0;
-    const currentList = formData.workshopsList;
-    if (currentList.length > maxEntries) {
-      updateFormData('workshopsList', currentList.slice(0, maxEntries));
-    }
-  }, [formData.workshopsNumber]);
-
-  useEffect(() => {
-    const maxEntries = Number(formData.researchProposalsNumber) || 0;
-    const currentList = formData.researchProposalsList;
-    if (currentList.length > maxEntries) {
-      updateFormData('researchProposalsList', currentList.slice(0, maxEntries));
-    }
-  }, [formData.researchProposalsNumber]);
 
   // ====================================
   // SECTION RENDERERS
@@ -671,64 +624,27 @@ const RnDCellForm: React.FC = () => {
       <p className="section-description">Research and Development Cell information and activities</p>
 
       <div className="form-grid">
-        {renderYesNoRadio('R&D Cell established?', 'hasRDCell')}
+        {renderYesNoRadio('R&D Cell established?', 'hasRDCell', true)}
         
         {formData.hasRDCell === 'Yes' && (
           <>
-            {renderNumberInput('Year of establishment', 'yearOfEstablishment')}
-            
-            {renderTextarea(
-              'Composition of R&D Cell',
-              'rdcComposition',
-              'Describe the composition (members, roles, structure, responsibilities)'
-            )}
+            {renderYearPickerInput('Year of establishment', 'yearOfEstablishment')}
             
             {renderNumberInput('Research activities by RDC - Number', 'researchActivitiesNumber')}
-            {renderActivityList(
-              'Research activities by RDC - List',
-              'researchActivitiesList',
-              'researchActivitiesNumber',
-              'Enter research activity/project name'
-            )}
             
             {renderNumberInput(
               'Workshops by RDC (projects, industry linkages, publications, consultancy) - Number',
               'workshopsNumber'
             )}
-            {renderWorkshopList()}
             
             {renderNumberInput('Research proposals facilitated by RDC - Number', 'researchProposalsNumber')}
-            {renderActivityList(
-              'Research proposals facilitated by RDC - List',
-              'researchProposalsList',
-              'researchProposalsNumber',
-              'Enter research proposal title/details'
-            )}
+            
+            {renderPdfUpload()}
           </>
         )}
       </div>
 
-      {/* Data summary for R&D Cell */}
-      {formData.hasRDCell === 'Yes' && (Number(formData.researchActivitiesNumber) > 0 || Number(formData.workshopsNumber) > 0 || Number(formData.researchProposalsNumber) > 0) && (
-        <div style={{ marginTop: '20px' }}>
-          <div style={{ 
-            padding: '12px', 
-            backgroundColor: '#e8f4fd', 
-            border: '1px solid #bee5eb', 
-            borderRadius: '4px',
-            fontSize: '0.9rem',
-            color: '#0c5460'
-          }}>
-            <strong>📊 R&D Cell Activity Summary:</strong>
-            <ul style={{ margin: '8px 0 0 20px', padding: 0 }}>
-              <li>Research Activities: {formData.researchActivitiesNumber || 0} ({formData.researchActivitiesList.length} listed)</li>
-              <li>Workshops: {formData.workshopsNumber || 0} ({formData.workshopsList.length} listed)</li>
-              <li>Research Proposals: {formData.researchProposalsNumber || 0} ({formData.researchProposalsList.length} listed)</li>
-              <li>Total Activities: {Number(formData.researchActivitiesNumber || 0) + Number(formData.workshopsNumber || 0) + Number(formData.researchProposalsNumber || 0)}</li>
-            </ul>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 
@@ -741,8 +657,6 @@ const RnDCellForm: React.FC = () => {
     const yearsActive = formData.yearOfEstablishment 
       ? new Date().getFullYear() - Number(formData.yearOfEstablishment)
       : 0;
-
-    const workshopsWithOutcomes = formData.workshopsList.filter(w => w.outcomes.trim()).length;
     
     return (
       <div className="form-section">
@@ -757,7 +671,6 @@ const RnDCellForm: React.FC = () => {
               <>
                 <p><strong>Year Established:</strong> {formData.yearOfEstablishment || 'Not specified'}</p>
                 <p><strong>Years Active:</strong> {yearsActive > 0 ? `${yearsActive} years` : 'N/A'}</p>
-                <p><strong>Composition Defined:</strong> {formData.rdcComposition ? '✅ Yes' : '❌ Not specified'}</p>
               </>
             )}
           </div>
@@ -765,14 +678,6 @@ const RnDCellForm: React.FC = () => {
           <div className="summary-card">
             <h4>Research Activities</h4>
             <p><strong>Total Activities:</strong> {formData.researchActivitiesNumber || 0}</p>
-            <p><strong>Activities Listed:</strong> {formData.researchActivitiesList.length}</p>
-            <p><strong>List Completeness:</strong> {
-              Number(formData.researchActivitiesNumber) > 0 && formData.researchActivitiesList.length === Number(formData.researchActivitiesNumber)
-                ? '✅ Complete' 
-                : formData.researchActivitiesList.length > 0 
-                  ? '🟡 Partial' 
-                  : '❌ Not started'
-            }</p>
             {yearsActive > 0 && (
               <p><strong>Avg. per Year:</strong> {(Number(formData.researchActivitiesNumber || 0) / yearsActive).toFixed(1)}</p>
             )}
@@ -781,28 +686,14 @@ const RnDCellForm: React.FC = () => {
           <div className="summary-card">
             <h4>Workshops Conducted</h4>
             <p><strong>Total Workshops:</strong> {formData.workshopsNumber || 0}</p>
-            <p><strong>Workshops Listed:</strong> {formData.workshopsList.length}</p>
-            <p><strong>With Outcomes:</strong> {workshopsWithOutcomes}/{formData.workshopsList.length}</p>
-            <p><strong>List Completeness:</strong> {
-              Number(formData.workshopsNumber) > 0 && formData.workshopsList.length === Number(formData.workshopsNumber)
-                ? '✅ Complete' 
-                : formData.workshopsList.length > 0 
-                  ? '🟡 Partial' 
-                  : '❌ Not started'
-            }</p>
+            {yearsActive > 0 && (
+              <p><strong>Avg. per Year:</strong> {(Number(formData.workshopsNumber || 0) / yearsActive).toFixed(1)}</p>
+            )}
           </div>
 
           <div className="summary-card">
             <h4>Research Proposals</h4>
             <p><strong>Proposals Facilitated:</strong> {formData.researchProposalsNumber || 0}</p>
-            <p><strong>Proposals Listed:</strong> {formData.researchProposalsList.length}</p>
-            <p><strong>List Completeness:</strong> {
-              Number(formData.researchProposalsNumber) > 0 && formData.researchProposalsList.length === Number(formData.researchProposalsNumber)
-                ? '✅ Complete' 
-                : formData.researchProposalsList.length > 0 
-                  ? '🟡 Partial' 
-                  : '❌ Not started'
-            }</p>
             {yearsActive > 0 && (
               <p><strong>Avg. per Year:</strong> {(Number(formData.researchProposalsNumber || 0) / yearsActive).toFixed(1)}</p>
             )}
@@ -813,9 +704,9 @@ const RnDCellForm: React.FC = () => {
             <p><strong>Total Activities:</strong> {totalActivities}</p>
             <p><strong>Activity Distribution:</strong></p>
             <div style={{ marginLeft: '15px', fontSize: '0.9rem' }}>
-              <p>• Research: {((Number(formData.researchActivitiesNumber || 0) / totalActivities) * 100 || 0).toFixed(0)}%</p>
-              <p>• Workshops: {((Number(formData.workshopsNumber || 0) / totalActivities) * 100 || 0).toFixed(0)}%</p>
-              <p>• Proposals: {((Number(formData.researchProposalsNumber || 0) / totalActivities) * 100 || 0).toFixed(0)}%</p>
+              <p>• Research: {totalActivities > 0 ? ((Number(formData.researchActivitiesNumber || 0) / totalActivities) * 100).toFixed(0) : 0}%</p>
+              <p>• Workshops: {totalActivities > 0 ? ((Number(formData.workshopsNumber || 0) / totalActivities) * 100).toFixed(0) : 0}%</p>
+              <p>• Proposals: {totalActivities > 0 ? ((Number(formData.researchProposalsNumber || 0) / totalActivities) * 100).toFixed(0) : 0}%</p>
             </div>
             <p><strong>Performance Rating:</strong> {
               totalActivities >= 20 ? '🟢 Excellent' :
@@ -826,26 +717,14 @@ const RnDCellForm: React.FC = () => {
           </div>
 
           <div className="summary-card">
-            <h4>Data Quality Assessment</h4>
-            <p><strong>Validation Errors:</strong> {validationErrors.length === 0 ? '✅ No errors' : `❌ ${validationErrors.length} error(s)`}</p>
-            <p><strong>List Constraints Met:</strong> {
-              (Number(formData.researchActivitiesNumber) === formData.researchActivitiesList.length || Number(formData.researchActivitiesNumber) === 0) &&
-              (Number(formData.workshopsNumber) === formData.workshopsList.length || Number(formData.workshopsNumber) === 0) &&
-              (Number(formData.researchProposalsNumber) === formData.researchProposalsList.length || Number(formData.researchProposalsNumber) === 0)
-                ? '✅ Yes' : '❌ No'
-            }</p>
-            <p><strong>Workshop Outcomes:</strong> {
-              formData.workshopsList.length > 0 
-                ? `${((workshopsWithOutcomes / formData.workshopsList.length) * 100).toFixed(0)}% complete`
-                : 'No workshops'
-            }</p>
-            <p><strong>Overall Completeness:</strong> {
-              formData.hasRDCell === 'Yes' && 
-              formData.rdcComposition && 
-              totalActivities > 0 
-                ? '✅ Complete' 
-                : '🟡 Partial'
-            }</p>
+            <h4>Document Upload Status</h4>
+            <p><strong>PDF Document:</strong> {uploadedFile && !uploadedFile.selected ? '✅ Uploaded' : '❌ Not uploaded'}</p>
+            {uploadedFile && !uploadedFile.selected && (
+              <>
+                <p><strong>File Name:</strong> {uploadedFile.file.name}</p>
+                <p><strong>File Size:</strong> {(uploadedFile.file.size / 1024).toFixed(2)} KB</p>
+              </>
+            )}
           </div>
         </div>
 
@@ -867,44 +746,6 @@ const RnDCellForm: React.FC = () => {
             </ul>
             <p style={{ margin: '10px 0 0 0', fontWeight: 'bold' }}>
               Please fix these errors before proceeding to submission.
-            </p>
-          </div>
-        )}
-
-        {/* Missing lists warning */}
-        {formData.hasRDCell === 'Yes' && (
-          (Number(formData.researchActivitiesNumber) > formData.researchActivitiesList.length ||
-           Number(formData.workshopsNumber) > formData.workshopsList.length ||
-           Number(formData.researchProposalsNumber) > formData.researchProposalsList.length)
-        ) && (
-          <div style={{ 
-            marginTop: '20px', 
-            padding: '15px', 
-            backgroundColor: '#fff3cd', 
-            border: '1px solid #ffeaa7', 
-            borderRadius: '4px',
-            color: '#856404'
-          }}>
-            <h4 style={{ margin: '0 0 10px 0', color: '#856404' }}>⚠️ Incomplete Activity Listings</h4>
-            <ul style={{ margin: 0, paddingLeft: '20px' }}>
-              {Number(formData.researchActivitiesNumber) > formData.researchActivitiesList.length && (
-                <li>Research Activities: {Number(formData.researchActivitiesNumber) - formData.researchActivitiesList.length} more activity(ies) needed</li>
-              )}
-              {Number(formData.workshopsNumber) > formData.workshopsList.length && (
-                <li>Workshops: {Number(formData.workshopsNumber) - formData.workshopsList.length} more workshop(s) needed</li>
-              )}
-              {Number(formData.researchProposalsNumber) > formData.researchProposalsList.length && (
-                <li>Research Proposals: {Number(formData.researchProposalsNumber) - formData.researchProposalsList.length} more proposal(s) needed</li>
-              )}
-            </ul>
-          </div>
-        )}
-
-        {formData.rdcComposition && (
-          <div style={{ marginTop: '20px', padding: '20px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-            <h4 style={{ color: '#495057', marginBottom: '10px' }}>R&D Cell Composition</h4>
-            <p style={{ color: '#6c757d', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-wrap' }}>
-              {formData.rdcComposition}
             </p>
           </div>
         )}
@@ -995,7 +836,7 @@ const RnDCellForm: React.FC = () => {
 
   return (
     <div className="container">
-     <Header />
+      <Header />
       <PageNavigationSubheader totalPages={21}/>
 
       <Page16

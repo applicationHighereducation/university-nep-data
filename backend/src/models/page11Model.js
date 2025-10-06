@@ -27,7 +27,7 @@ return result.rows[0];
 export const fetchDataService = async(u_id) => {
   const session = getCurrentSession()
   const result = await pool.query('SELECT * FROM abc_apaar WHERE u_id = $1 AND session = $2', [u_id,session])
-  return result.rows
+  return result.rows[0]
 } 
 
 

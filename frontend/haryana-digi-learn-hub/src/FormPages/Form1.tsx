@@ -33,6 +33,7 @@ interface FormData {
   selectedCouncils: string[];
   ccfugpProgramsNumber: string | number;
   ccfugpProgramsPercentage: string | number;
+  selectedCcfugpPrograms: string[];
   
   // Bachelor & B.VOC Programs
   bachelorDegreeNumber: string | number;
@@ -92,7 +93,6 @@ const CollegeProgramForm: React.FC = () => {
   const [universityData, setUniversityData] = useState<UniversityData | null>(null);
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [otherInputs, setOtherInputs] = useState<OtherInputState>({});
-  const [programIds, setProgramIds] = useState([])
   
   const [formData, setFormData] = useState<FormData>({
     universityId: '',
@@ -100,36 +100,37 @@ const CollegeProgramForm: React.FC = () => {
     totalPrograms: '',
     ugcFollowed: '',
     ugProgramsNumber: '',
-    ugProgramsPercentage: '',
+    ugProgramsPercentage: '0',
     selectedCourses: [],
     selectedRegulatingCourses: [],
     regulatingCouncilsNumber: '',
-    regulatingCouncilsPercentage: '',
+    regulatingCouncilsPercentage: '0',
     selectedCouncils: [],
     ccfugpProgramsNumber: '',
-    ccfugpProgramsPercentage: '',
+    ccfugpProgramsPercentage: '0',
+    selectedCcfugpPrograms: [],
     bachelorDegreeNumber: '',
-    bachelorDegreePercentage: '',
+    bachelorDegreePercentage: '0',
     selectedBachelorPrograms: [],
     bVocNumber: '',
-    bVocPercentage: '',
+    bVocPercentage: '0',
     selectedBVocPrograms: [],
     fourYearBachelorNumber: '',
-    fourYearBachelorPercentage: '',
+    fourYearBachelorPercentage: '0',
     selectedFourYearBachelor: [],
     honoursWithResearchNumber: '',
-    honoursWithResearchPercentage: '',
+    honoursWithResearchPercentage: '0',
     selectedHonoursWithResearch: [],
-    itepProgramsNumber: '',
+    itepProgramsNumber: 0,
     itepLevels: [],
     integratedDegreeNumber: '',
     selectedIntegratedDegree: [],
     phdAdmissionAllowed: '',
-    phdStudentsNumber: '',
+    phdStudentsNumber: 0,
     fiveYearIntegratedNumber: '',
-    fiveYearIntegratedPercentage: '',
+    fiveYearIntegratedPercentage: '0',
     selectedFiveYearIntegrated: [],
-    ordinanceFlexibilityNumber: '',
+    ordinanceFlexibilityNumber: 0,
     flexibilityProvidedNumber: '',
     selectedFlexibilityProvided: [],
   });
@@ -152,6 +153,16 @@ const CollegeProgramForm: React.FC = () => {
     'MCI (Medical Council of India)',
     'BCI (Bar Council of India)',
     'PCI (Pharmacy Council of India)',
+    'Other'
+  ]);
+
+  const [ccfugpProgramOptions, setCcfugpProgramOptions] = useState<string[]>([
+    'B.A. (Bachelor of Arts)',
+    'B.Com (Bachelor of Commerce)',
+    'B.Sc. (Bachelor of Science)',
+    'B.Tech (Bachelor of Technology)',
+    'BBA (Bachelor of Business Administration)',
+    'BCA (Bachelor of Computer Applications)',
     'Other'
   ]);
 
@@ -223,18 +234,17 @@ const CollegeProgramForm: React.FC = () => {
     'Other'
   ]);
 
-  // Define sections - Updated with separate Review and Submit
+  // Define sections
   const sections: Section[] = [
-    { id: 0, title: "Your Institution Information", description: "Welcome! Here's your institution overview", fields: [] },
-    { id: 1, title: "UGC CCFUGP Information", description: "Provide details about UGC CCFUGP alignment", fields: [] },
-    { id: 2, title: "Regulating Councils Programs", description: "Information about regulating council alignments and non-aligned programs", fields: [] },
-    { id: 3, title: "Bachelor Degree Programs", description: "3-year bachelor degree and B.VOC program details", fields: [] },
-    { id: 4, title: "Four Year University Programs", description: "4-year bachelor degree and honours with research programs", fields: [] },
-    { id: 5, title: "Other 4 Year Programs", description: "ITEP and integrated degree programs", fields: [] },
-    { id: 6, title: "5 Year University Programs", description: "5-year integrated program information", fields: [] },
-    { id: 7, title: "Other Program Information", description: "UG programmes with ordinance flexibility", fields: [] },
-    { id: 8, title: "Review", description: "Review all information before submission", fields: [] },
-    { id: 9, title: "Submit", description: "Final submission", fields: [] }
+    { id: 0, title: "UGC CCFUGP Information", description: "Provide details about UGC CCFUGP alignment", fields: [] },
+    { id: 1, title: "Regulating Councils Programs", description: "Information about regulating council alignments and non-aligned programs", fields: [] },
+    { id: 2, title: "Bachelor Degree Programs", description: "3-year bachelor degree and B.VOC program details", fields: [] },
+    { id: 3, title: "Four Year University Programs", description: "4-year bachelor degree and honours with research programs", fields: [] },
+    { id: 4, title: "Other 4 Year Programs", description: "ITEP and integrated degree programs", fields: [] },
+    { id: 5, title: "5 Year University Programs", description: "5-year integrated program information", fields: [] },
+    { id: 6, title: "Other Program Information", description: "UG programmes with ordinance flexibility", fields: [] },
+    { id: 7, title: "Review", description: "Review all information before submission", fields: [] },
+    { id: 8, title: "Submit", description: "Final submission", fields: [] }
   ];
 
   // ====================================
@@ -248,6 +258,11 @@ const CollegeProgramForm: React.FC = () => {
     const num = Number(numberField) || 0;
     const totalNum = Number(total) || 0;
     return totalNum > 0 ? ((num / totalNum) * 100).toFixed(2) : '0';
+  };
+
+  // Function to calculate count based on selected items
+  const calculateCountFromSelection = (selectedItems: string[]): number => {
+    return selectedItems.length;
   };
 
   // Function to handle "Other" option selection
@@ -270,7 +285,6 @@ const CollegeProgramForm: React.FC = () => {
   ): void => {
     const trimmedValue = otherInputs[fieldKey]?.value.trim();
     if (trimmedValue) {
-      // Add to options list if not already present
       if (!optionsState.includes(trimmedValue)) {
         const otherIndex = optionsState.indexOf('Other');
         const newOptions = [...optionsState];
@@ -278,13 +292,11 @@ const CollegeProgramForm: React.FC = () => {
         setOptionsState(newOptions);
       }
 
-      // Add to selected items
       const currentItems = (formData[selectedField] as string[]) || [];
       if (!currentItems.includes(trimmedValue)) {
         updateFormData(selectedField, [...currentItems, trimmedValue]);
       }
 
-      // Reset other input
       setOtherInputs(prev => ({
         ...prev,
         [fieldKey]: {
@@ -328,7 +340,6 @@ const CollegeProgramForm: React.FC = () => {
     if (value === 'Other') {
       handleOtherSelection(fieldKey);
     } else {
-      // Add to selected items directly
       const currentItems = (formData[selectedField] as string[]) || [];
       if (!currentItems.includes(value)) {
         updateFormData(selectedField, [...currentItems, value]);
@@ -342,35 +353,59 @@ const CollegeProgramForm: React.FC = () => {
     updateFormData(field, currentItems.filter(item => item !== itemToRemove));
   };
 
-  // Generic component for rendering number input with percentage
-  const renderNumberWithPercentage = (
-    label: string,
+  // Handle focus on number inputs with default value 0
+  const handleNumberInputFocus = (field: keyof FormData): void => {
+    if (formData[field] === 0 || formData[field] === '0') {
+      updateFormData(field, '');
+    }
+  };
+
+  // Handle blur on number inputs to restore 0 if empty
+  const handleNumberInputBlur = (field: keyof FormData): void => {
+    if (formData[field] === '' || formData[field] === null || formData[field] === undefined) {
+      updateFormData(field, 0);
+    }
+  };
+
+  // Modified component for rendering disabled number input with percentage and heading
+  const renderDisabledNumberWithPercentage = (
+    heading: string,
     numberField: keyof FormData,
     percentageField: keyof FormData,
+    selectedItems: string[] = [],
     required = false
   ): JSX.Element => {
+    const calculatedCount = calculateCountFromSelection(selectedItems);
+    
+    if (Number(formData[numberField]) !== calculatedCount) {
+      updateFormData(numberField, calculatedCount);
+    }
+
     return (
       <>
+        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600' }}>
+          {heading} {required && <span className="required">*</span>}
+        </h3>
         <div className="form-group">
-          <label className="label">
-            {label} {required && <span className="required">*</span>}
-          </label>
+          <label className="label">Counts</label>
           <input
             type="number"
-            className="input"
-            value={formData[numberField]}
-            onChange={(e) => updateFormData(numberField, e.target.value)}
-            min="0"
+            className="input disabled-input"
+            value={calculatedCount}
+            readOnly
+            disabled
+            style={{ backgroundColor: '#f8f9fa', cursor: 'not-allowed' }}
           />
         </div>
         <div className="form-group">
-          <label className="label">Percentage
-          </label>
+          <label className="label">Percentage</label>
           <input
             type="text"
-            className="input"
-            value={`${formData[percentageField]} %`}
+            className="input disabled-input"
+            value={`${formData[percentageField] || '0'} %`}
             readOnly
+            disabled
+            style={{ backgroundColor: '#f8f9fa', cursor: 'not-allowed' }}
           />
         </div>
       </>
@@ -409,7 +444,6 @@ const CollegeProgramForm: React.FC = () => {
           </select>
         </div>
 
-        {/* Other input field */}
         {otherInputState?.isVisible && (
           <div className="form-group form-group-full">
             <label className="label">Please specify:</label>
@@ -441,7 +475,6 @@ const CollegeProgramForm: React.FC = () => {
           </div>
         )}
 
-        {/* Selected items display */}
         {selectedItems.length > 0 && (
           <div className="form-group form-group-full">
             <label className="label">Selected {label} ({selectedItems.length})</label>
@@ -465,150 +498,143 @@ const CollegeProgramForm: React.FC = () => {
     );
   };
 
-    // ====================================
+  // ====================================
   // Api Functions
   // ====================================
+  const fetchProgramId = async (programs) => {
+    try {
+      const response = await axios.post(
+        'http://localhost:8000/api/ugForm/getProgram',
+        { names: programs },
+        { withCredentials: true }
+      );
 
- const fetchProgramId = async (programs) => {
-  try {
-    const response = await axios.post(
-      'http://localhost:8000/api/ugForm/getProgram',
-      { names: programs },
-      { withCredentials: true }
-    );
+      const programData = response.data.data;
+      const programIDs = programData.map(program => program.p_id);
+      return programIDs;
+    } catch (error) {
+      console.error("Error fetching program IDs:", error);
+      return [];
+    }
+  };
 
-    const programData = response.data.data;
-    const programIDs = programData.map(program => program.p_id);
-    return programIDs;
-  } catch (error) {
-    console.error("Error fetching program IDs:", error);
-    return [];
+  //Send Page 1 Data
+  const sendCCFGUGPData = async () => {
+    const isFollowed = formData.ugcFollowed === 'Yes';
+
+    try {
+      const response = await axios.post(
+        'http://localhost:8000/api/ugform/ccfugp',
+        {
+          isFollowed: isFollowed,
+          count: formData.ugProgramsNumber
+        },
+        { withCredentials: true }
+      );
+
+      const programIds = await fetchProgramId(formData.selectedCourses);
+
+      if (programIds.length > 0 || programIds.length === 0) {
+        const insertResponse = await axios.post(
+          'http://localhost:8000/api/ugForm/insertProgram',
+          {
+            programIds: programIds     
+          },
+          { withCredentials: true }
+        );
+      } else {
+        console.warn("⚠️ No program IDs found, skipping insert.");
+      }
+
+    } catch (error) {
+      console.error("❌ Error in sendCCFGUGPData:", error);
+    }
+  };
+
+  //Send Page 2 Data
+  const sendRegulatingCouncilsData = async () => {
+    try {
+      const response = await axios.post(
+        'http://localhost:8000/api/ugform/setSection3',
+        {
+          count_regulating: formData.regulatingCouncilsNumber,
+          count_others: formData.ccfugpProgramsNumber
+        },
+        { withCredentials: true }
+      );
+
+      const programIds = await fetchProgramId(formData.selectedRegulatingCourses);
+    
+      if (programIds.length > 0 || programIds.length === 0) {
+        const insertResponse = await axios.post(
+          'http://localhost:8000/api/ugform/insertRegulatingProgram',
+          {
+            programIds: programIds
+          },
+          { withCredentials: true }
+        );
+      } else {
+        console.warn("⚠️ No program IDs found, skipping insert.");
+      }
+
+      const ccfugpProgramIds = await fetchProgramId(formData.selectedCcfugpPrograms);
+      
+      if (ccfugpProgramIds.length > 0 || ccfugpProgramIds.length === 0) {
+        const insertCcfugpResponse = await axios.post(
+          'http://localhost:8000/api/ugform/insertNonAlignedProgram',
+          {
+            programIds: ccfugpProgramIds
+          },
+          { withCredentials: true }
+        );
+      }
+
+    } catch (error) {
+      console.error("❌ Error in sendRegulatingCouncilsData:", error);
+    }
+  };
+
+  //Send Page 3 data
+  const setSection4 = async() => {
+    try {
+      const response = await axios.post('http://localhost:8000/api/ugform/setSection4', {
+        count_non_bvoc : formData.bachelorDegreeNumber,
+        count_bvoc : formData.bVocNumber
+      }, {withCredentials: true})
+
+      const programIdsList1 = await fetchProgramId(formData.selectedBachelorPrograms)
+      const programIdsList2 = await fetchProgramId(formData.selectedBVocPrograms)
+
+      if (programIdsList1.length > 0 || programIdsList1.length === 0) {
+        const insertResponse = await axios.post(
+          'http://localhost:8000/api/ugform/insertBachelorProgram',
+          {
+            programIds: programIdsList1      
+          },
+          { withCredentials: true }
+        );
+      } else {
+        console.warn("⚠️ No program IDs found, skipping insert.");
+      }
+
+      if (programIdsList2.length > 0 || programIdsList2.length === 0) {
+        const insertResponse = await axios.post(
+          'http://localhost:8000/api/ugform/insertBvoc',
+          {
+            programIds: programIdsList2 
+          },
+          { withCredentials: true }
+        );
+      } else {
+        console.warn("⚠️ No program IDs found, skipping insert.");
+      }
+
+    } catch (error) {
+      console.log('Error while sending Section 4 Data',error)
+    }
   }
-};
 
-//Send Page 2 Data
-const sendCCFGUGPData = async () => {
-  const isFollowed = formData.ugcFollowed === 'Yes';
-
-  try {
-    // Send first API
-    const response = await axios.post(
-      'http://localhost:8000/api/ugform/ccfugp',
-      {
-        isFollowed: isFollowed,
-        count: formData.ugProgramsNumber
-      },
-      { withCredentials: true }
-    );
-
-
-    // Fetch program IDs (no state used)
-    const programIds = await fetchProgramId(formData.selectedCourses);
-
-    // Send IDs instantly to insert API
-    if (programIds.length > 0 || programIds.length === 0) {
-      const insertResponse = await axios.post(
-        'http://localhost:8000/api/ugForm/insertProgram',
-        {
-          programIds: programIds     
-        },
-        { withCredentials: true }
-      );
-
-    } else {
-      console.warn("⚠️ No program IDs found, skipping insert.");
-    }
-
-  } catch (error) {
-    console.error("❌ Error in sendCCFGUGPData:", error);
-  }
-};
-
-
-
-//Send Page 3 Data
-const sendRegulatingCouncilsData = async () => {
-  try {
-    // Step 1️⃣ — Send first API
-    const response = await axios.post(
-      'http://localhost:8000/api/ugform/setSection3',
-      {
-        count_regulating: formData.regulatingCouncilsNumber,
-        count_others: formData.ccfugpProgramsNumber
-      },
-      { withCredentials: true }
-    );
-
-   
-    // Fetch program IDs (no state used)
-    const programIds = await fetchProgramId(formData.selectedRegulatingCourses);
-  
-    // Send IDs instantly to insert API
-    if (programIds.length > 0 || programIds.length === 0) {
-      const insertResponse = await axios.post(
-        'http://localhost:8000/api/ugform/insertRegulatingProgram',
-        {
-          programIds: programIds       // ✅ array of IDs
-        },
-        { withCredentials: true }
-      );
-
-    } else {
-      console.warn("⚠️ No program IDs found, skipping insert.");
-    }
-
-  } catch (error) {
-    console.error("❌ Error in sendCCFGUGPData:", error);
-  }
-};
-//Send Page 4 data
-const setSection4 = async() => {
- try {
-  //Send Count
-  const response = await axios.post('http://localhost:8000/api/ugform/setSection4', {
-    count_non_bvoc : formData.bachelorDegreeNumber,
-    count_bvoc : formData.bVocNumber
-  }, {withCredentials: true})
-
-  //Fetch Program Id's
-  const programIdsList1 = await fetchProgramId(formData.selectedBachelorPrograms)
-  const programIdsList2 = await fetchProgramId(formData.selectedBVocPrograms)
-  //Send List 1
-    if (programIdsList1.length > 0 || programIdsList1.length === 0) {
-      const insertResponse = await axios.post(
-        'http://localhost:8000/api/ugform/insertBachelorProgram',
-        {
-          programIds: programIdsList1      
-        },
-        { withCredentials: true }
-      );
-
-    } else {
-      console.warn("⚠️ No program IDs found, skipping insert.");
-    }
-
-  //Send List 2
-
-  if (programIdsList1.length > 0 || programIdsList1.length === 0) {
-      const insertResponse = await axios.post(
-        'http://localhost:8000/api/ugform/insertBvoc',
-        {
-          programIds: programIdsList2 
-        },
-        { withCredentials: true }
-      );
-
-    } else {
-      console.warn("⚠️ No program IDs found, skipping insert.");
-    }
-
- } catch (error) {
-  console.log('Error while sending Section 4 Data',error)
- }
-}
-
-
-  //Send Page 5 Data
+  //Send Page 4 Data
   const setSection5 = async() => {
     try {
       const response = await axios.post('http://localhost:8000/api/ugform/setSection5', {
@@ -619,36 +645,32 @@ const setSection4 = async() => {
       const programIdsList1 = await fetchProgramId(formData.selectedFourYearBachelor)
       const programIdsList2 = await fetchProgramId(formData.selectedHonoursWithResearch)
 
-      //Send List 1
       if (programIdsList1.length > 0 || programIdsList1.length === 0) {
-      const insertResponse = await axios.post(
-        'http://localhost:8000/api/ugform/insert4YrBachelor',
-        {
-          programIds: programIdsList1      
-        },
-        { withCredentials: true }
-      );
+        const insertResponse = await axios.post(
+          'http://localhost:8000/api/ugform/insert4YrBachelor',
+          {
+            programIds: programIdsList1      
+          },
+          { withCredentials: true }
+        );
+      } else {
+        console.warn("⚠️ No program IDs found, skipping insert.");
+      }
 
-    } else {
-      console.warn("⚠️ No program IDs found, skipping insert.");
-    }
-
-    //Send List 2
-    if (programIdsList1.length > 0 || programIdsList1.length === 0) {
-      const insertResponse = await axios.post(
-        'http://localhost:8000/api/ugform/insert4YrHonor',
-        {
-          programIds: programIdsList2 
-        },
-        { withCredentials: true }
-      );
-
-    } else {
-      console.warn("⚠️ No program IDs found, skipping insert.");
-    }
+      if (programIdsList2.length > 0 || programIdsList2.length === 0) {
+        const insertResponse = await axios.post(
+          'http://localhost:8000/api/ugform/insert4YrHonor',
+          {
+            programIds: programIdsList2 
+          },
+          { withCredentials: true }
+        );
+      } else {
+        console.warn("⚠️ No program IDs found, skipping insert.");
+      }
 
     } catch (error) {
-      
+      console.error("Error in setSection5:", error);
     }
   }
 
@@ -662,19 +684,17 @@ const setSection4 = async() => {
 
       const programIds = await fetchProgramId(formData.selectedIntegratedDegree)
       const number = await programIds.map(Number)
-      console.log(number)
 
       const insertResponse = await axios.post('http://localhost:8000/api/ugform/insert4Integrated', {programIds: number}, {withCredentials: true})
-      console.log(insertResponse.data.data)
     } catch (error) {
-      console.log('Error while sending sending 6 data', error)
+      console.log('Error while sending section 6 data', error)
     }
   }
 
   const setSection7 = async() => {
     try {
-       const response = await axios.post('http://localhost:8000/api/ugform/setSection7', {
-       count_5years_integrated: formData.fiveYearIntegratedNumber
+      const response = await axios.post('http://localhost:8000/api/ugform/setSection7', {
+        count_5years_integrated: formData.fiveYearIntegratedNumber
       }, {withCredentials: true})
 
       const programIds = await fetchProgramId(formData.selectedFiveYearIntegrated)
@@ -702,29 +722,34 @@ const setSection4 = async() => {
   // ====================================
   // EVENT HANDLERS
   // ====================================
- const handleNext = async () => {
-  if (currentSection === 1) {
-    await sendCCFGUGPData();
-  } else if (currentSection === 2) {
-    await sendRegulatingCouncilsData();
-  } else if (currentSection === 3){
-    await setSection4()
-  }  else if (currentSection === 4){
-    await setSection5()
-  }  else if (currentSection === 5){
-    await setSection6()
-  }  else if (currentSection === 6){
-    await setSection7()
-  } else if (currentSection === 7){
-    await setSection8()
-  }
+  const handleNext = async () => {
+    // Validation for Section 0 - UGC CCFUGP
+    if (currentSection === 0) {
+      if (!formData.ugcFollowed) {
+        alert('Please select whether UGC CCFUGP is followed or not.');
+        return;
+      }
+      await sendCCFGUGPData();
+    } else if (currentSection === 1) {
+      await sendRegulatingCouncilsData();
+    } else if (currentSection === 2){
+      await setSection4()
+    } else if (currentSection === 3){
+      await setSection5()
+    } else if (currentSection === 4){
+      await setSection6()
+    } else if (currentSection === 5){
+      await setSection7()
+    } else if (currentSection === 6){
+      await setSection8()
+    }
 
-  setCompletedSections(prev => new Set([...prev, currentSection]));
+    setCompletedSections(prev => new Set([...prev, currentSection]));
 
-  if (currentSection < sections.length - 1) {
-    setCurrentSection(prev => prev + 1);
-  }
-};
+    if (currentSection < sections.length - 1) {
+      setCurrentSection(prev => prev + 1);
+    }
+  };
 
   const handlePrevious = (): void => {
     if (currentSection > 0) {
@@ -744,7 +769,6 @@ const setSection4 = async() => {
     console.log('Form submitted:', formData);
     setSubmitted(true);
     
-    // Show popup and redirect after delay
     setTimeout(() => {
       window.location.href = '/form/page2';
     }, 2000);
@@ -755,43 +779,43 @@ const setSection4 = async() => {
   };
 
   const resetForm = (): void => {
-    // Reset form data
     setFormData({
       universityId: '',
       universityName: '',
       totalPrograms: '',
       ugcFollowed: '',
       ugProgramsNumber: '',
-      ugProgramsPercentage: '',
+      ugProgramsPercentage: '0',
       selectedCourses: [],
       selectedRegulatingCourses: [],
       regulatingCouncilsNumber: '',
-      regulatingCouncilsPercentage: '',
+      regulatingCouncilsPercentage: '0',
       selectedCouncils: [],
       ccfugpProgramsNumber: '',
-      ccfugpProgramsPercentage: '',
+      ccfugpProgramsPercentage: '0',
+      selectedCcfugpPrograms: [],
       bachelorDegreeNumber: '',
-      bachelorDegreePercentage: '',
+      bachelorDegreePercentage: '0',
       selectedBachelorPrograms: [],
       bVocNumber: '',
-      bVocPercentage: '',
+      bVocPercentage: '0',
       selectedBVocPrograms: [],
       fourYearBachelorNumber: '',
-      fourYearBachelorPercentage: '',
+      fourYearBachelorPercentage: '0',
       selectedFourYearBachelor: [],
       honoursWithResearchNumber: '',
-      honoursWithResearchPercentage: '',
+      honoursWithResearchPercentage: '0',
       selectedHonoursWithResearch: [],
-      itepProgramsNumber: '',
+      itepProgramsNumber: 0,
       itepLevels: [],
       integratedDegreeNumber: '',
       selectedIntegratedDegree: [],
       phdAdmissionAllowed: '',
-      phdStudentsNumber: '',
+      phdStudentsNumber: 0,
       fiveYearIntegratedNumber: '',
-      fiveYearIntegratedPercentage: '',
+      fiveYearIntegratedPercentage: '0',
       selectedFiveYearIntegrated: [],
-      ordinanceFlexibilityNumber: '',
+      ordinanceFlexibilityNumber: 0,
       flexibilityProvidedNumber: '',
       selectedFlexibilityProvided: [],
     });
@@ -835,32 +859,29 @@ const setSection4 = async() => {
     fetchUniversityData();
   }, []);
 
- useEffect(() => {
-  const fetchPrograms = async() => {
-    try {
-      const response = await axios.get('http://localhost:8000/api/program/getUG', {withCredentials: true})
-      const data = response.data.data
-      const names = data.map((course: any) => course.name);
-      setCourseOptions(names)
-      setRegulatingCourseOptions(names)
-      setBachelorProgramOptions(names)
-      setBVocProgramOptions(names)
-      setFiveYearIntegratedOptions(names)
-      setFourYearBachelorOptions(names)
-      setHonoursResearchOptions(names)
-      setIntegratedDegreeOptions(names)
-      setFlexibilityOptions(names)
-    } catch (error) {
-      console.log(error)
+  useEffect(() => {
+    const fetchPrograms = async() => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/program/getUG', {withCredentials: true})
+        const data = response.data.data
+        const names = data.map((course: any) => course.name);
+        setCourseOptions(names)
+        setRegulatingCourseOptions(names)
+        setCcfugpProgramOptions(names)
+        setBachelorProgramOptions(names)
+        setBVocProgramOptions(names)
+        setFiveYearIntegratedOptions(names)
+        setFourYearBachelorOptions(names)
+        setHonoursResearchOptions(names)
+        setIntegratedDegreeOptions(names)
+        setFlexibilityOptions(names)
+      } catch (error) {
+        console.log(error)
+      }
     }
-  }
 
-  fetchPrograms()
- }, [])
-
-
-
-
+    fetchPrograms()
+  }, [])
 
   // Auto-calculate percentages
   useEffect(() => {
@@ -895,46 +916,11 @@ const setSection4 = async() => {
     updateFormData('fiveYearIntegratedPercentage', calculatePercentage(formData.fiveYearIntegratedNumber, formData.totalPrograms));
   }, [formData.totalPrograms, formData.fiveYearIntegratedNumber]); 
 
-
   // ====================================
   // SECTION RENDERERS
   // ====================================
   
-  // SECTION 0: INSTITUTION INFORMATION
-  const renderInstitutionInformation = (): JSX.Element => (
-    <div className="form-section">
-      <h2 className="section-title">Institution Information</h2>
-      <p className="section-description">Welcome! Here's your institution overview</p>
-      
-      <div className="form-grid">
-        {universityData ? (
-          <div className="form-group form-group-full">
-            <div className="university-welcome-card">
-              <div className="welcome-header">
-                <h3 className="welcome-title">Welcome to</h3>
-                <h2 className="university-name">{universityData.universityName}</h2>
-              </div>
-              <div className="university-programs-info">
-                <div className="programs-display">
-                  <span className="programs-count">{universityData.totalPrograms}</span>
-                  <span className="programs-label">Total Programs Available</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="form-group form-group-full">
-            <div className="loading-card">
-              <div className="loading-spinner"></div>
-              <p>Loading your university information...</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  // SECTION 1: UGC CCFUGP INFORMATION
+  // SECTION 0: UGC CCFUGP INFORMATION
   const renderUGCCCFUGPInformation = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">UGC CCFUGP Information</h2>
@@ -965,7 +951,7 @@ const setSection4 = async() => {
         
         {formData.ugcFollowed === 'Yes' && (
           <>
-            {renderNumberWithPercentage('Number of UG programmes aligned to UGC CCFUGP', 'ugProgramsNumber', 'ugProgramsPercentage')}
+            {renderDisabledNumberWithPercentage('Number of UG programmes aligned to UGC CCFUGP', 'ugProgramsNumber', 'ugProgramsPercentage', formData.selectedCourses)}
             {renderDropdownWithTags('Select Aligned Programmes', 'courses', courseOptions, 'selectedCourses', '-- Add a programme --', setCourseOptions)}
           </>
         )}
@@ -973,60 +959,55 @@ const setSection4 = async() => {
     </div>
   );
 
-  // SECTION 2: REGULATING COUNCILS & NON-ALIGNED PROGRAMS
+  // SECTION 1: REGULATING COUNCILS & NON-ALIGNED PROGRAMS
   const renderRegulatingCouncilsAndNonAligned = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">Regulating Councils & Non-Aligned Programs</h2>
       <p className="section-description">Information about regulating council alignments and non-aligned programs</p>
 
       <div className="form-grid">
-        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600' }}>Regulating Councils</h3>
-        {renderNumberWithPercentage('UG programmes aligned to Regulating Councils', 'regulatingCouncilsNumber', 'regulatingCouncilsPercentage')}
+        {renderDisabledNumberWithPercentage('UG programmes aligned to Regulating Councils', 'regulatingCouncilsNumber', 'regulatingCouncilsPercentage', formData.selectedRegulatingCourses)}
         {renderDropdownWithTags('Select Programs Aligned to Regulating Councils', 'regulatingCourses', regulatingCourseOptions, 'selectedRegulatingCourses', '-- Add a programme --', setRegulatingCourseOptions)}
         
-        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600' }}>Non-Aligned Programs</h3>
-        {renderNumberWithPercentage('Programmes neither CCFUGP nor Council', 'ccfugpProgramsNumber', 'ccfugpProgramsPercentage')}
+        {renderDisabledNumberWithPercentage('Programmes neither CCFUGP nor Council', 'ccfugpProgramsNumber', 'ccfugpProgramsPercentage', formData.selectedCcfugpPrograms)}
+        {renderDropdownWithTags('Select Non-Aligned Programs', 'ccfugpPrograms', ccfugpProgramOptions, 'selectedCcfugpPrograms', '-- Add a programme --', setCcfugpProgramOptions)}
       </div>
     </div>
   );
 
-  // SECTION 3: BACHELOR DEGREE PROGRAMS & B.VOC PROGRAMS
+  // SECTION 2: BACHELOR DEGREE PROGRAMS & B.VOC PROGRAMS
   const renderBachelorAndBVocPrograms = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">Bachelor Degree Programs & B.VOC Programs</h2>
       <p className="section-description">3-year bachelor degree and B.VOC program details</p>
 
       <div className="form-grid">
-        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600' }}>Bachelor Degree Programs</h3>
-        {renderNumberWithPercentage('3-year bachelor Degree programmes (non-B.VOC)', 'bachelorDegreeNumber', 'bachelorDegreePercentage')}
-        {Number(formData.bachelorDegreeNumber) > 0 && renderDropdownWithTags('Select Bachelor Degree Programs', 'bachelorPrograms', bachelorProgramOptions, 'selectedBachelorPrograms', '-- Add a program --', setBachelorProgramOptions)}
+        {renderDisabledNumberWithPercentage('3-year bachelor Degree programmes (non-B.VOC)', 'bachelorDegreeNumber', 'bachelorDegreePercentage', formData.selectedBachelorPrograms)}
+        {renderDropdownWithTags('Select Bachelor Degree Programs', 'bachelorPrograms', bachelorProgramOptions, 'selectedBachelorPrograms', '-- Add a program --', setBachelorProgramOptions)}
         
-        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600' }}>B.VOC Programs</h3>
-        {renderNumberWithPercentage('Number of B.VOC programmes', 'bVocNumber', 'bVocPercentage')}
-        {Number(formData.bVocNumber) > 0 && renderDropdownWithTags('Select B.VOC Programs', 'bVocPrograms', bVocProgramOptions, 'selectedBVocPrograms', '-- Add a B.VOC program --', setBVocProgramOptions)}
+        {renderDisabledNumberWithPercentage('Number of B.VOC programmes', 'bVocNumber', 'bVocPercentage', formData.selectedBVocPrograms)}
+        {renderDropdownWithTags('Select B.VOC Programs', 'bVocPrograms', bVocProgramOptions, 'selectedBVocPrograms', '-- Add a B.VOC program --', setBVocProgramOptions)}
       </div>
     </div>
   );
 
-  // SECTION 4: 4 YEAR PROGRAMS
+  // SECTION 3: 4 YEAR PROGRAMS
   const renderFourYearPrograms = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">4 Year Programs</h2>
       <p className="section-description">4-year bachelor degree and honours with research programs</p>
 
       <div className="form-grid">
-        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600' }}>4 Year Bachelor Degree Program</h3>
-        {renderNumberWithPercentage('Counts', 'fourYearBachelorNumber', 'fourYearBachelorPercentage')}
-        {Number(formData.fourYearBachelorNumber) > 0 && renderDropdownWithTags('Select 4-year Bachelor Programs', 'fourYearBachelor', fourYearBachelorOptions, 'selectedFourYearBachelor', '-- Add a 4-year program --', setFourYearBachelorOptions)}
+        {renderDisabledNumberWithPercentage('4 Year Bachelor Degree Program', 'fourYearBachelorNumber', 'fourYearBachelorPercentage', formData.selectedFourYearBachelor)}
+        {renderDropdownWithTags('Select 4-year Bachelor Programs', 'fourYearBachelor', fourYearBachelorOptions, 'selectedFourYearBachelor', '-- Add a 4-year program --', setFourYearBachelorOptions)}
         
-        <h3 style={{ gridColumn: '1 / -1', margin: '20px 0 10px 0', fontSize: '1.2em', fontWeight: '600' }}>4 Year Honours with Research Program</h3>
-        {renderNumberWithPercentage('Counts', 'honoursWithResearchNumber', 'honoursWithResearchPercentage')}
-        {Number(formData.honoursWithResearchNumber) > 0 && renderDropdownWithTags('Select Honours with Research Programs', 'honoursResearch', honoursResearchOptions, 'selectedHonoursWithResearch', '-- Add a honours program --', setHonoursResearchOptions)}
+        {renderDisabledNumberWithPercentage('4 Year Honours with Research Program', 'honoursWithResearchNumber', 'honoursWithResearchPercentage', formData.selectedHonoursWithResearch)}
+        {renderDropdownWithTags('Select Honours with Research Programs', 'honoursResearch', honoursResearchOptions, 'selectedHonoursWithResearch', '-- Add a honours program --', setHonoursResearchOptions)}
       </div>
     </div>
   );
 
-  // SECTION 5: OTHER 4 YEAR PROGRAMS
+  // SECTION 4: OTHER 4 YEAR PROGRAMS
   const renderOtherFourYearPrograms = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">Other 4 Year Programs</h2>
@@ -1040,6 +1021,8 @@ const setSection4 = async() => {
             className="input"
             value={formData.itepProgramsNumber}
             onChange={(e) => updateFormData('itepProgramsNumber', e.target.value)}
+            onFocus={() => handleNumberInputFocus('itepProgramsNumber')}
+            onBlur={() => handleNumberInputBlur('itepProgramsNumber')}
             min="0"
           />
         </div>
@@ -1049,18 +1032,8 @@ const setSection4 = async() => {
         </div>
         {renderDropdownWithTags('ITEP Levels', 'itepLevels', itepLevelOptions, 'itepLevels', '-- Select levels --', setItepLevelOptions)}
 
-        <div className="form-group">
-          <label className="label">4-year Integrated degree programmes (other than ITEP) - Counts</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.integratedDegreeNumber}
-            onChange={(e) => updateFormData('integratedDegreeNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.integratedDegreeNumber) > 0 && renderDropdownWithTags('4-year Integrated degree programmes (other than ITEP) - List', 'integratedDegree', integratedDegreeOptions, 'selectedIntegratedDegree', '-- Add integrated program --', setIntegratedDegreeOptions)}
+        {renderDisabledNumberWithPercentage('4-year Integrated degree programmes (other than ITEP)', 'integratedDegreeNumber', 'integratedDegreePercentage', formData.selectedIntegratedDegree)}
+        {renderDropdownWithTags('4-year Integrated degree programmes (other than ITEP) - List', 'integratedDegree', integratedDegreeOptions, 'selectedIntegratedDegree', '-- Add integrated program --', setIntegratedDegreeOptions)}
 
         <div className="form-group form-group-full">
           <label className="label">Ordinance allows PhD admission after 4-year Bachelor (Honours with Research)?</label>
@@ -1092,6 +1065,8 @@ const setSection4 = async() => {
               className="input"
               value={formData.phdStudentsNumber}
               onChange={(e) => updateFormData('phdStudentsNumber', e.target.value)}
+              onFocus={() => handleNumberInputFocus('phdStudentsNumber')}
+              onBlur={() => handleNumberInputBlur('phdStudentsNumber')}
               min="0"
             />
           </div>
@@ -1100,20 +1075,20 @@ const setSection4 = async() => {
     </div>
   );
 
-  // SECTION 6: 5 YEAR PROGRAMS
+  // SECTION 5: 5 YEAR PROGRAMS
   const renderFiveYearPrograms = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">5 Year Programs</h2>
       <p className="section-description">5-year integrated program information</p>
 
       <div className="form-grid">
-        {renderNumberWithPercentage('(Not Master degree) - Counts', 'fiveYearIntegratedNumber', 'fiveYearIntegratedPercentage')}
-        {Number(formData.fiveYearIntegratedNumber) > 0 && renderDropdownWithTags('5-year Integrated programmes (not Master degree) - List', 'fiveYearIntegrated', fiveYearIntegratedOptions, 'selectedFiveYearIntegrated', '-- Add 5-year program --', setFiveYearIntegratedOptions)}
+        {renderDisabledNumberWithPercentage('(Not Master degree) - Counts', 'fiveYearIntegratedNumber', 'fiveYearIntegratedPercentage', formData.selectedFiveYearIntegrated)}
+        {renderDropdownWithTags('5-year Integrated programmes (not Master degree) - List', 'fiveYearIntegrated', fiveYearIntegratedOptions, 'selectedFiveYearIntegrated', '-- Add 5-year program --', setFiveYearIntegratedOptions)}
       </div>
     </div>
   );
 
-  // SECTION 7: OTHERS
+  // SECTION 6: OTHERS
   const renderOthers = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">Others</h2>
@@ -1127,27 +1102,19 @@ const setSection4 = async() => {
             className="input"
             value={formData.ordinanceFlexibilityNumber}
             onChange={(e) => updateFormData('ordinanceFlexibilityNumber', e.target.value)}
+            onFocus={() => handleNumberInputFocus('ordinanceFlexibilityNumber')}
+            onBlur={() => handleNumberInputBlur('ordinanceFlexibilityNumber')}
             min="0"
           />
         </div>
 
-        <div className="form-group">
-          <label className="label">UG programmes where flexibility actually provided - Counts</label>
-          <input
-            type="number"
-            className="input"
-            value={formData.flexibilityProvidedNumber}
-            onChange={(e) => updateFormData('flexibilityProvidedNumber', e.target.value)}
-            min="0"
-          />
-        </div>
-
-        {Number(formData.flexibilityProvidedNumber) > 0 && renderDropdownWithTags('UG programmes where flexibility actually provided - List', 'flexibilityProvided', flexibilityOptions, 'selectedFlexibilityProvided', '-- Add flexibility program --', setFlexibilityOptions)}
+        {renderDisabledNumberWithPercentage('UG programmes where flexibility actually provided', 'flexibilityProvidedNumber', 'flexibilityProvidedPercentage', formData.selectedFlexibilityProvided)}
+        {renderDropdownWithTags('UG programmes where flexibility actually provided - List', 'flexibilityProvided', flexibilityOptions, 'selectedFlexibilityProvided', '-- Add flexibility program --', setFlexibilityOptions)}
       </div>
     </div>
   );
 
-  // SECTION 8: REVIEW
+  // SECTION 7: REVIEW
   const renderReview = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">Review</h2>
@@ -1175,12 +1142,13 @@ const setSection4 = async() => {
         <div className="summary-card">
           <h4>Regulating Councils</h4>
           <p><strong>Programs:</strong> {formData.regulatingCouncilsNumber || 0} ({formData.regulatingCouncilsPercentage || 0}%)</p>
-          <p><strong>Selected Councils:</strong> {formData.selectedCouncils.length > 0 ? formData.selectedCouncils.join(', ') : 'None'}</p>
+          <p><strong>Selected Programs:</strong> {formData.selectedRegulatingCourses.length > 0 ? formData.selectedRegulatingCourses.join(', ') : 'None'}</p>
         </div>
 
         <div className="summary-card">
           <h4>Non-Aligned Programs</h4>
           <p><strong>Programs:</strong> {formData.ccfugpProgramsNumber || 0} ({formData.ccfugpProgramsPercentage || 0}%)</p>
+          <p><strong>Selected Programs:</strong> {formData.selectedCcfugpPrograms.length > 0 ? formData.selectedCcfugpPrograms.join(', ') : 'None'}</p>
         </div>
 
         <div className="summary-card">
@@ -1240,7 +1208,7 @@ const setSection4 = async() => {
     </div>
   );
 
-  // SECTION 9: SUBMIT
+  // SECTION 8: SUBMIT
   const renderSubmit = (): JSX.Element => (
     <div className="form-section">
       <h2 className="section-title">Submit</h2>
@@ -1286,16 +1254,15 @@ const setSection4 = async() => {
   // ====================================
   const renderSection = (): JSX.Element => {
     switch (currentSection) {
-      case 0: return renderInstitutionInformation();
-      case 1: return renderUGCCCFUGPInformation();
-      case 2: return renderRegulatingCouncilsAndNonAligned();
-      case 3: return renderBachelorAndBVocPrograms();
-      case 4: return renderFourYearPrograms();
-      case 5: return renderOtherFourYearPrograms();
-      case 6: return renderFiveYearPrograms();
-      case 7: return renderOthers();
-      case 8: return renderReview();
-      case 9: return renderSubmit();
+      case 0: return renderUGCCCFUGPInformation();
+      case 1: return renderRegulatingCouncilsAndNonAligned();
+      case 2: return renderBachelorAndBVocPrograms();
+      case 3: return renderFourYearPrograms();
+      case 4: return renderOtherFourYearPrograms();
+      case 5: return renderFiveYearPrograms();
+      case 6: return renderOthers();
+      case 7: return renderReview();
+      case 8: return renderSubmit();
       default: return <div>Section not found</div>;
     }
   };
@@ -1307,7 +1274,7 @@ const setSection4 = async() => {
 
   return (
     <div className="container">
-     <Header />
+      <Header />
       <PageNavigationSubheader totalPages={21}/>
 
       <Page1
