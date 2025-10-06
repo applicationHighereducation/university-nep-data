@@ -15,6 +15,18 @@ export const getCurrentSession = () => {
   return today >= startDate && today <= endDate ? year : year - 1;
 };
 
+export const getUGProgramDetailsService = async(u_id) => {
+  const session = getCurrentSession()
+  const result = await pool.query('SELECT * from ug_framework where u_id =$1 and session = $2', [u_id,session])
+  return result.rows[0]
+}
+
+export const getProgramsService = async(u_id,programId) => {
+  const session = getCurrentSession()
+  const result = await pool.query('SELECT * from program_list where u_id = $1 and session = $2 and pl_id = $3', [u_id,session,programId])
+  return result.rows[0]
+}
+
 export const getUniByNameService = async(u_id) => {
   const result = await pool.query('SELECT u_name,u_id FROM university_data WHERE u_id = $1', [u_id])
   return result.rows[0]
@@ -51,536 +63,98 @@ export const getProgramIdService = async(names) => {
     return result.rows
 }
 
-export const insertProgramsService = async (u_id, programIds) => {
-  const pl_id = 'CCFUGP';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
+
+
+// ð¥ Generic reusable insert function
+const insertProgramsByType = async (u_id, programIds, pl_id) => {
+  const session = getCurrentSession(); // ✅ Added session handling
+  console.log(`Inserting into ${pl_id}. Received programIds:`, programIds, 'Session:', session);
+
+  // 1️⃣ Delete all if empty
   if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
+    const result = await pool.query(
+      'DELETE FROM program_list WHERE u_id = $1 AND pl_id = $2 AND session = $3',
+      [u_id, pl_id, session]
+    );
+    console.log(`All programs deleted for u_id=${u_id}, pl_id=${pl_id}, session=${session}`);
     return result.rows;
   }
 
-  // ✅ 2️⃣ Get existing program IDs
+  // 2️⃣ Get existing program IDs (for the current session)
   const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
+    'SELECT p_id FROM program_list WHERE u_id = $1 AND pl_id = $2 AND session = $3',
+    [u_id, pl_id, session]
   );
   const existingIds = existing.rows.map(row => row.p_id);
 
-  // ✅ 3️⃣ Compare and find which to insert/delete
+  // 3️⃣ Compare sets
   const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
   const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
 
-  // ✅ 4️⃣ Delete removed ones
+  // 4️⃣ Delete removed ones
   if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
+    await pool.query(
+      'DELETE FROM program_list WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3 AND session = $4',
+      [u_id, deletedProgramIds, pl_id, session]
+    );
+    console.log(`Deleted programs for ${pl_id}, session=${session}:`, deletedProgramIds);
   }
 
-  // ✅ 5️⃣ Skip insert if no new programs
+  // 5️⃣ Insert new ones
   if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
+    console.log(`No new programs found for pl_id=${pl_id}, session=${session}`);
+    return [];
   }
 
-  // ✅ 6️⃣ Build dynamic placeholders safely
   const values = [];
   const placeholders = newProgramIds
     .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
+      const base = index * 4;
+      values.push(u_id, p_id, pl_id, session);
+      return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`;
     })
     .join(', ');
 
   const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
+    INSERT INTO program_list (u_id, p_id, pl_id, session)
     VALUES ${placeholders}
     RETURNING *;
   `;
 
   const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
+  console.log(`Inserted programs for ${pl_id}, session=${session}:`, newProgramIds);
 
   return result.rows;
 };
 
-export const insertRegulatingProgramsService = async (u_id, programIds) => {
-  const pl_id = 'REGULATING_COUNCILS';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
-  if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
-    return result.rows;
-  }
+// ð¥ Wrapper services with consistent naming
+export const insertProgramsService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'CCFUGP');
 
-  // ✅ 2️⃣ Get existing program IDs
-  const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
-  );
-  const existingIds = existing.rows.map(row => row.p_id);
+export const insertRegulatingProgramsService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'REGULATING_COUNCILS');
 
-  // ✅ 3️⃣ Compare and find which to insert/delete
-  const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
-  const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
+export const insert3yearBachelorProgramsService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'BACHELOR_3YEAR_PROGRAMS');
 
-  // ✅ 4️⃣ Delete removed ones
-  if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
-  }
+export const insertBvocProgramsService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'BVOC_PROGRAMS');
 
-  // ✅ 5️⃣ Skip insert if no new programs
-  if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
-  }
+export const insert4yearBachelorProgramService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'BACHELOR_4YEAR_PROGRAMS');
 
-  // ✅ 6️⃣ Build dynamic placeholders safely
-  const values = [];
-  const placeholders = newProgramIds
-    .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
-    })
-    .join(', ');
+export const insert4yearHonourProgramService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'HONOUR_4YEAR_PROGRAMS');
 
-  const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
-    VALUES ${placeholders}
-    RETURNING *;
-  `;
+export const insert4yearIntegratedDegreeProgramService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'INTEGRATED_4YEAR_PROGRAMS');
 
-  const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
+export const insert5yearIntegratedDegreeProgramService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'INTEGRATED_5YEAR_PROGRAMS');
 
-  return result.rows;
-};
+export const insertUGProgramWithFlexibilityService = (u_id, programIds) =>
+  insertProgramsByType(u_id, programIds, 'UG_PROGRAMS_WITH_FLEXIBILITY');
 
-export const insert3yearBachelorProgramsService = async (u_id, programIds) => {
-  const pl_id = 'BACHELOR_3YEAR_PROGRAMS';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
-  if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
-    return result.rows;
-  }
-
-  // ✅ 2️⃣ Get existing program IDs
-  const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
-  );
-  const existingIds = existing.rows.map(row => row.p_id);
-
-  // ✅ 3️⃣ Compare and find which to insert/delete
-  const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
-  const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
-
-  // ✅ 4️⃣ Delete removed ones
-  if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
-  }
-
-  // ✅ 5️⃣ Skip insert if no new programs
-  if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
-  }
-
-  // ✅ 6️⃣ Build dynamic placeholders safely
-  const values = [];
-  const placeholders = newProgramIds
-    .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
-    })
-    .join(', ');
-
-  const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
-    VALUES ${placeholders}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
-
-  return result.rows;
-};
-
-export const insertBvocProgramsService = async (u_id, programIds) => {
-  const pl_id = 'BVOC_PROGRAMS';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
-  if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
-    return result.rows;
-  }
-
-  // ✅ 2️⃣ Get existing program IDs
-  const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
-  );
-  const existingIds = existing.rows.map(row => row.p_id);
-
-  // ✅ 3️⃣ Compare and find which to insert/delete
-  const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
-  const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
-
-  // ✅ 4️⃣ Delete removed ones
-  if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
-  }
-
-  // ✅ 5️⃣ Skip insert if no new programs
-  if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
-  }
-
-  // ✅ 6️⃣ Build dynamic placeholders safely
-  const values = [];
-  const placeholders = newProgramIds
-    .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
-    })
-    .join(', ');
-
-  const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
-    VALUES ${placeholders}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
-
-  return result.rows;
-};
-
-export const insert4yearBachelorProgramService = async (u_id, programIds) => {
-  const pl_id = 'BACHELOR_4YEAR_PROGRAMS';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
-  if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
-    return result.rows;
-  }
-
-  // ✅ 2️⃣ Get existing program IDs
-  const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
-  );
-  const existingIds = existing.rows.map(row => row.p_id);
-
-  // ✅ 3️⃣ Compare and find which to insert/delete
-  const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
-  const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
-
-  // ✅ 4️⃣ Delete removed ones
-  if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
-  }
-
-  // ✅ 5️⃣ Skip insert if no new programs
-  if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
-  }
-
-  // ✅ 6️⃣ Build dynamic placeholders safely
-  const values = [];
-  const placeholders = newProgramIds
-    .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
-    })
-    .join(', ');
-
-  const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
-    VALUES ${placeholders}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
-
-  return result.rows;
-}
-
-export const insert4yearHonourProgramService = async (u_id, programIds) => {
-  const pl_id = 'HONOUR_4YEAR_PROGRAMS';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
-  if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
-    return result.rows;
-  }
-
-  // ✅ 2️⃣ Get existing program IDs
-  const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
-  );
-  const existingIds = existing.rows.map(row => row.p_id);
-
-  // ✅ 3️⃣ Compare and find which to insert/delete
-  const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
-  const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
-
-  // ✅ 4️⃣ Delete removed ones
-  if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
-  }
-
-  // ✅ 5️⃣ Skip insert if no new programs
-  if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
-  }
-
-  // ✅ 6️⃣ Build dynamic placeholders safely
-  const values = [];
-  const placeholders = newProgramIds
-    .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
-    })
-    .join(', ');
-
-  const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
-    VALUES ${placeholders}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
-
-  return result.rows;
-}
-
-export const insert4yearIntegratedDegreeProgramService = async (u_id, programIds) => {
-  const pl_id = 'INTEGRATED_4YEAR_PROGRAMS';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
-  if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
-    return result.rows;
-  }
-
-  // ✅ 2️⃣ Get existing program IDs
-  const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
-  );
-  const existingIds = existing.rows.map(row => row.p_id);
-
-  // ✅ 3️⃣ Compare and find which to insert/delete
-  const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
-  const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
-
-  // ✅ 4️⃣ Delete removed ones
-  if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
-  }
-
-  // ✅ 5️⃣ Skip insert if no new programs
-  if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
-  }
-
-  // ✅ 6️⃣ Build dynamic placeholders safely
-  const values = [];
-  const placeholders = newProgramIds
-    .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
-    })
-    .join(', ');
-
-  const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
-    VALUES ${placeholders}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
-
-  return result.rows;
-}
-
-export const insert5yearIntegratedDegreeProgramService = async (u_id, programIds) => {
-  const pl_id = 'INTEGRATED_5YEAR_PROGRAMS';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
-  if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
-    return result.rows;
-  }
-
-  // ✅ 2️⃣ Get existing program IDs
-  const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
-  );
-  const existingIds = existing.rows.map(row => row.p_id);
-
-  // ✅ 3️⃣ Compare and find which to insert/delete
-  const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
-  const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
-
-  // ✅ 4️⃣ Delete removed ones
-  if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
-  }
-
-  // ✅ 5️⃣ Skip insert if no new programs
-  if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
-  }
-
-  // ✅ 6️⃣ Build dynamic placeholders safely
-  const values = [];
-  const placeholders = newProgramIds
-    .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
-    })
-    .join(', ');
-
-  const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
-    VALUES ${placeholders}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
-
-  return result.rows;
-}
-
-export const insertUGProgramWithFlexibilityService = async (u_id, programIds) => {
-  const pl_id = 'UG_PROGRAMS_WITH_FLEXIBILITY';
-console.log("Received programIds:", programIds, "Type:", typeof programIds);
-  // ✅ 1️⃣ Delete all if no program IDs sent
-  if (!programIds || programIds.length === 0) {
-    const result = await pool.query('DELETE FROM program_list WHERE u_id = $1 and pl_id = $2', [u_id,pl_id]);
-    console.log(`All programs deleted for u_id = ${u_id}`);
-    return result.rows;
-  }
-
-  // ✅ 2️⃣ Get existing program IDs
-  const existing = await pool.query(
-    `SELECT p_id FROM program_list WHERE u_id = $1 and pl_id = $2`,
-    [u_id,pl_id]
-  );
-  const existingIds = existing.rows.map(row => row.p_id);
-
-  // ✅ 3️⃣ Compare and find which to insert/delete
-  const newProgramIds = programIds.filter(p_id => !existingIds.includes(p_id));
-  const deletedProgramIds = existingIds.filter(p_id => !programIds.includes(p_id));
-
-  // ✅ 4️⃣ Delete removed ones
-  if (deletedProgramIds.length > 0) {
-    const deleteQuery = `
-      DELETE FROM program_list
-      WHERE u_id = $1 AND p_id = ANY($2::int[]) AND pl_id = $3;
-    `;
-    await pool.query(deleteQuery, [u_id, deletedProgramIds, pl_id]);
-    console.log("Deleted programs:", deletedProgramIds);
-  }
-
-  // ✅ 5️⃣ Skip insert if no new programs
-  if (newProgramIds.length === 0) {
-    console.log('No new programs found')
-    return []
-  }
-
-  // ✅ 6️⃣ Build dynamic placeholders safely
-  const values = [];
-  const placeholders = newProgramIds
-    .map((p_id, index) => {
-      const base = index * 3;
-      values.push(u_id, p_id, pl_id);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
-    })
-    .join(', ');
-
-  const insertQuery = `
-    INSERT INTO program_list (u_id, p_id, pl_id)
-    VALUES ${placeholders}
-    RETURNING *;
-  `;
-
-  const result = await pool.query(insertQuery, values);
-  console.log("Inserted programs:", newProgramIds);
-
-  return result.rows;
-}
 
 
 
