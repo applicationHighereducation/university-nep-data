@@ -117,7 +117,7 @@ const UGExitOptionsForm: React.FC = () => {
 
 const insertSection1 = async () => {
   try {
-    const response = await axios.post('http://localhost:8000/api/page12/section1', {
+    const response = await axios.post('/api/page12/section1', {
       ug_appear_1yr_count: formData.firstYearAppearedNumber,
       ug_exit_1yr_percent: formData.firstYearExitPercentage,
       ug_enter_2yr_count : formData.secondYearReEntryNumber,
@@ -133,7 +133,7 @@ const insertSection1 = async () => {
 
 const insertSection2 = async () => {
   try {
-    const response = await axios.post('http://localhost:8000/api/page12/section2', {
+    const response = await axios.post('/api/page12/section2', {
         ug_enter_3yr_count: formData.thirdYearReEntryNumber,
         ug_appear_3yr_count: formData.thirdYearAppearedNumber,
         ug_exit_3yr_percent: formData.thirdYearExitPercentage,
@@ -151,10 +151,10 @@ useEffect(() => {
   const fetchUGData = async () => {
     try {
       
-      const section1Response = await axios.get('http://localhost:8000/api/page12/section1', {withCredentials: true});
+      const section1Response = await axios.get('/api/page12/section1', {withCredentials: true});
       const section1Data = section1Response.data.data || {};
      
-      const section2Response = await axios.get('http://localhost:8000/api/page12/section2', {withCredentials: true});
+      const section2Response = await axios.get('/api/page12/section2', {withCredentials: true});
       const section2Data = section2Response.data.data || {};
 
      

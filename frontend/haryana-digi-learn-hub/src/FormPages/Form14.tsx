@@ -217,7 +217,7 @@ const OverallExitEntryForm: React.FC = () => {
   //API's 
   const insertData = async () => {
     try {
-      const response = await axios.post('http://localhost:8000/api/page14/insert', {
+      const response = await axios.post('/api/page14/insert', {
         exitData : formData.overallStudentsExitPercentage,
         entryData : formData.overallStudentsMultipleEntryPercentage
       }, {withCredentials: true})
@@ -230,7 +230,7 @@ const OverallExitEntryForm: React.FC = () => {
   useEffect(() => {
     const fetchExistingData = async() => {
       try {
-        const response = await axios.get('http://localhost:8000/api/page14/get', {withCredentials: true})
+        const response = await axios.get('/api/page14/get', {withCredentials: true})
         const existingDataArray = response.data.data;
         const existingData = existingDataArray[0]
         console.log(existingData.student_exit_percentage)

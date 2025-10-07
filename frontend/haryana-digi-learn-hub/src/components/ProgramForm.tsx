@@ -88,7 +88,7 @@ export function ProgramForm() {
   useEffect(() => {
    const fetchFaculties = async() => {
      try {
-      const response = await axios.get('http://localhost:8000/api/faculty', {withCredentials: true})
+      const response = await axios.get('/api/faculty', {withCredentials: true})
       setFaculties(response.data.data)
     } catch (error) {
       console.log('Error: ', error)
@@ -108,7 +108,7 @@ export function ProgramForm() {
     useEffect(() => {
       const fetchProgramTypes = async () => {
         try {
-          const response = await axios.get("http://localhost:8000/api/program-data/get" , {withCredentials: true}); // Replace with your API endpoint
+          const response = await axios.get("/api/program-data/get" , {withCredentials: true}); // Replace with your API endpoint
           const data = response.data.data;
           
           const mappedOptions = data.map((pt: { pt_id: string; pt_name: string }) => ({
@@ -165,14 +165,14 @@ export function ProgramForm() {
     useEffect(() => {
       const fetchDepartments = async() => {
         try {
-          const facultyResponse = await axios.post('http://localhost:8000/api/faculty/getId', 
+          const facultyResponse = await axios.post('/api/faculty/getId', 
             {name: selectedFaculty},
             {withCredentials: true}
           )
           const facultyId = facultyResponse.data.data.f_id
           setFacultyId(facultyId)
 
-          const response = await axios.get(`http://localhost:8000/api/department/${facultyId}`, {withCredentials: true})
+          const response = await axios.get(`/api/department/${facultyId}`, {withCredentials: true})
           setDepartments(response.data.data)
         } catch (error) {
           console.log('Error while fetching departments', error)
@@ -189,8 +189,8 @@ export function ProgramForm() {
     useEffect(() => {
       const fetchId = async () => {
       try {
-        const departmentResponse = await axios.post('http://localhost:8000/api/department/getName', {name: selectedDepartment}, {withCredentials: true})
-        const ptReponse = await axios.post('http://localhost:8000/api/program-data/get', {pt_name : selectedProgramType}, {withCredentials: true})
+        const departmentResponse = await axios.post('/api/department/getName', {name: selectedDepartment}, {withCredentials: true})
+        const ptReponse = await axios.post('/api/program-data/get', {pt_name : selectedProgramType}, {withCredentials: true})
         setSelectedDepartmentId(departmentResponse.data.data)
         setSelectedProgramTypeId(ptReponse.data.data)
       } catch (error) {
@@ -210,7 +210,7 @@ export function ProgramForm() {
 
     try {
       const response = await axios.post(
-        `http://localhost:8000/api/program/get`,
+        `/api/program/get`,
         {d_id : selectedDepartmentId},
         { withCredentials: true }
       );
@@ -295,7 +295,7 @@ const navigate = useNavigate()
   // Call backend to save program
   try {
     const response = await axios.post(
-      "http://localhost:8000/api/program/create",
+      "/api/program/create",
       {
         f_id: facultyId, // make sure you have this
         d_id: selectedDepartmentId,
@@ -355,7 +355,7 @@ const removeProgram = async (
 
   // Call backend to delete the program
   try {
-    await axios.delete(`http://localhost:8000/api/program/delete/${programToRemove.p_id}`, {
+    await axios.delete(`/api/program/delete/${programToRemove.p_id}`, {
       withCredentials: true,
     });
     toast.success(`Program "${programToRemove.name}" removed successfully`);

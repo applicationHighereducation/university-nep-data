@@ -90,7 +90,7 @@ export function UniversityForm() {
 
       try {
         const response = await axios.get(
-          `http://localhost:8000/api/uni-data/get`,
+          `/api/uni-data/get`,
           { withCredentials: true }
         );
 
@@ -153,7 +153,7 @@ export function UniversityForm() {
     
     // Submit registrar data to backend
     await axios.post(
-      "http://localhost:8000/api/uni-data/uploadRegistrar",
+      "/api/uni-data/uploadRegistrar",
       {
         name: values.registrarName,
         mobile: values.registrarPhone,
@@ -184,7 +184,7 @@ export function UniversityForm() {
       if (!isValid) return;
 
      try {
-  await axios.post("http://localhost:8000/api/uni-data/uploadName", {
+  await axios.post("/api/uni-data/uploadName", {
     uniName: values.name,
   }, {withCredentials: true});
 
@@ -199,7 +199,7 @@ export function UniversityForm() {
       if (!isValid) return;
 
       try {
-        await axios.post("http://localhost:8000/api/uni-data/uploadAddress", {
+        await axios.post("/api/uni-data/uploadAddress", {
           street : values.address,
           city: values.city,
           state: values.state,
@@ -215,7 +215,7 @@ export function UniversityForm() {
       if (!isValid) return;
 
       await axios.post(
-        "http://localhost:8000/api/uni-data/uploadContact",
+        "/api/uni-data/uploadContact",
         {
           phone: values.phone,
           website: values.website,
@@ -229,7 +229,7 @@ export function UniversityForm() {
       if (!isValid) return;
 
       await axios.post(
-        "http://localhost:8000/api/uni-data/uploadVc",
+        "/api/uni-data/uploadVc",
         {
           name: values.vcName,
           mobile: values.vcPhone,

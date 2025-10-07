@@ -170,7 +170,7 @@ const PGExitEntryForm: React.FC = () => {
   const insertData = async() => {
     try {
       const exit = calculateExitPercentage()
-      const response = await axios.post('http://localhost:8000/api/page13/section1', {
+      const response = await axios.post('/api/page13/section1', {
         pg_appear_1yr_count: formData.pgStudentsAppearedFirstYear,
         pg_exit_1yr_percent: exit,
         pg_enter_2yr_after4yrhonour_count : formData.pgStudentsEntering2ndYearAfter4YrHonours,
@@ -253,7 +253,7 @@ const PGExitEntryForm: React.FC = () => {
   useEffect(() => {
   const fetchData = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/page13/get', {withCredentials: true});
+      const response = await axios.get('/api/page13/get', {withCredentials: true});
       const existingData = response.data.data;
 ;
       console.log(existingData)

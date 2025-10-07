@@ -309,7 +309,7 @@ const ABCRegistrationForm: React.FC = () => {
 
   const insertData = async() => {
     try {
-      const response = await axios.post('http://localhost:8000/api/page11/insert', {
+      const response = await axios.post('/api/page11/insert', {
         total : formData.totalStudentsHei,
         registeredStudents: formData.studentsRegisteredAbc,
         uploadedStudents : formData.studentsWithUploadsAbc,
@@ -325,7 +325,7 @@ const ABCRegistrationForm: React.FC = () => {
   useEffect(() => {
     const fetchData = async() => {
       try {
-        const response = await axios.get('http://localhost:8000/api/page11/get', {withCredentials: true})
+        const response = await axios.get('/api/page11/get', {withCredentials: true})
         const existingData = response.data.data
         console.log(existingData)
         console.log()

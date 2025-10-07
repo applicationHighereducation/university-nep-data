@@ -32,7 +32,7 @@ const facultySchema = z.object({
 type FacultyFormData = z.infer<typeof facultySchema>;
 
 // Correct API URL to match your backend routes
-const API_URL = "http://localhost:8000/api/faculty";
+const API_URL = "/api/faculty";
 
 export function FacultyForm() {
   const { user } = useAuth();

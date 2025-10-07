@@ -40,7 +40,7 @@ export function DeptForm() {
   const fetchFaculties = async () => {
     try {
       const response = await axios.get(
-        'http://localhost:8000/api/faculty', {
+        '/api/faculty', {
           withCredentials: true
         }
       );
@@ -98,7 +98,7 @@ export function DeptForm() {
 
     try {
       const response = await axios.post(
-        'http://localhost:8000/api/department/getCount',
+        '/api/department/getCount',
         { f_id: faculty.f_id },
         { withCredentials: true }
       );
@@ -123,7 +123,7 @@ export function DeptForm() {
 const fetchDepartments = async (facultyId: number) => {
   try {
     const response = await axios.get(
-      `http://localhost:8000/api/department/${facultyId}`,
+      `/api/department/${facultyId}`,
       { withCredentials: true }
     );
 
@@ -200,7 +200,7 @@ if (existing.some(dept => dept.name === trimmedDepartment)) {
 
     // API call to add department
       await axios.post(
-      "http://localhost:8000/api/department/",
+      "/api/department/",
       {
         name: faculty.name,
         dept_name: trimmedDepartment,
@@ -247,7 +247,7 @@ console.log(currentDepartments)
   if (!faculty) return;
 
   try {
-    await axios.delete(`http://localhost:8000/api/department/delete/${d_id}`, { withCredentials: true });
+    await axios.delete(`/api/department/delete/${d_id}`, { withCredentials: true });
 
     // Refresh the department list
     await fetchDepartments(faculty.f_id);

@@ -452,7 +452,7 @@ const PGProgramForm: React.FC = () => {
    const fetchProgramId = async (programs) => {
   try {
     const response = await axios.post(
-      'http://localhost:8000/api/pgForm/getProgramId',
+      '/api/pgForm/getProgramId',
       { names: programs },
       { withCredentials: true }
     );
@@ -469,7 +469,7 @@ const PGProgramForm: React.FC = () => {
   const setSection1 = async() => {
     const isFollowed = formData.isUgcCcfppFollowed === 'Yes'
     try {
-       const response = await axios.post('http://localhost:8000/api/pgform/setSection1', {
+       const response = await axios.post('/api/pgform/setSection1', {
          isFollowed : isFollowed,
         count_ccfpp : formData.pgStrictAlignedNumber,
         pg_other_count: formData.pgDifferentNumber
@@ -479,11 +479,11 @@ const PGProgramForm: React.FC = () => {
       const programs2 = await fetchProgramId(formData.selectedPgDifferent)
      
 
-      const sendProgram1 = await axios.post('http://localhost:8000/api/pgform/insertpgCCFFP', {
+      const sendProgram1 = await axios.post('/api/pgform/insertpgCCFFP', {
         programIds : programs1
       }, {withCredentials: true})
       
-      const sendProgram2 = await axios.post('http://localhost:8000/api/pgform/insertpgOtherThanCCFUGP', {
+      const sendProgram2 = await axios.post('/api/pgform/insertpgOtherThanCCFUGP', {
         programIds : programs2
       }, {withCredentials: true})
 
@@ -495,7 +495,7 @@ const PGProgramForm: React.FC = () => {
 
   const setSection2 = async() => {
     try {
-      const response = await axios.post('http://localhost:8000/api/pgform/setSection2', {
+      const response = await axios.post('/api/pgform/setSection2', {
         count_regulating: formData.pgCouncilAlignedNumber,
         count_2year: formData.twoYearMasterNumber
       }, {withCredentials: true})
@@ -503,11 +503,11 @@ const PGProgramForm: React.FC = () => {
       const regulatingPrograms = await fetchProgramId(formData.selectedPgCouncilAligned)
       const twoYearPrograms = await fetchProgramId(formData.selectedTwoYearMaster)
 
-      const sendRegulating = await axios.post('http://localhost:8000/api/pgform/insertRegulating', {
+      const sendRegulating = await axios.post('/api/pgform/insertRegulating', {
         programIds : regulatingPrograms
       }, {withCredentials: true})
 
-       const sendTwoYear = await axios.post('http://localhost:8000/api/pgform/insert2Yearpg', {
+       const sendTwoYear = await axios.post('/api/pgform/insert2Yearpg', {
         programIds : twoYearPrograms
       }, {withCredentials: true})
     } catch (error) {
@@ -517,7 +517,7 @@ const PGProgramForm: React.FC = () => {
 
     const setSection3 = async() => {
       try {
-         const response = await axios.post('http://localhost:8000/api/pgform/setSection3', {
+         const response = await axios.post('/api/pgform/setSection3', {
           count_1year: formData.oneYearMasterNumber,
           count_5year_integrated : formData.fiveYearIntegratedNumber
       }, {withCredentials: true})
@@ -525,11 +525,11 @@ const PGProgramForm: React.FC = () => {
       const fiveYear = await fetchProgramId(formData.selectedFiveYearIntegrated)
       const oneYear = await fetchProgramId(formData.selectedOneYearMaster)
 
-      const setFive = await axios.post('http://localhost:8000/api/pgform/insert5YearIntegratedpg', {
+      const setFive = await axios.post('/api/pgform/insert5YearIntegratedpg', {
         programIds: fiveYear
       }, {withCredentials: true})
 
-      const setOne = await axios.post('http://localhost:8000/api/pgform/insert1Yearpg', {
+      const setOne = await axios.post('/api/pgform/insert1Yearpg', {
         programIds: oneYear
       }, {withCredentials: true})
 
@@ -635,10 +635,10 @@ const PGProgramForm: React.FC = () => {
   useEffect(() => {
    const fetchDetails = async() => {
       try {
-        const uniName = await axios.get('http://localhost:8000/api/ugform/getName', {withCredentials: true})
+        const uniName = await axios.get('/api/ugform/getName', {withCredentials: true})
         const uniData = uniName.data.data
 
-        const totalPrograms = await axios.get('http://localhost:8000/api/pgform/total', {withCredentials: true})
+        const totalPrograms = await axios.get('/api/pgform/total', {withCredentials: true})
         const programs = totalPrograms.data.data
         setUniversityData(uniData);
         setFormData(prev => ({
@@ -660,7 +660,7 @@ const PGProgramForm: React.FC = () => {
   useEffect(() => {
     const fetchPrograms = async() => {
       try {
-        const response = await axios.get('http://localhost:8000/api/pgform/get', {withCredentials: true})
+        const response = await axios.get('/api/pgform/get', {withCredentials: true})
         const data  = response.data.data
         const names = data.map((course: any) => course.name);
         setPgStrictAlignedOptions(names)

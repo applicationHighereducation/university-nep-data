@@ -504,7 +504,7 @@ const CollegeProgramForm: React.FC = () => {
   const fetchProgramId = async (programs) => {
     try {
       const response = await axios.post(
-        'http://localhost:8000/api/ugForm/getProgram',
+        '/api/ugForm/getProgram',
         { names: programs },
         { withCredentials: true }
       );
@@ -524,7 +524,7 @@ const CollegeProgramForm: React.FC = () => {
 
     try {
       const response = await axios.post(
-        'http://localhost:8000/api/ugform/ccfugp',
+        '/api/ugform/ccfugp',
         {
           isFollowed: isFollowed,
           count: formData.ugProgramsNumber
@@ -536,7 +536,7 @@ const CollegeProgramForm: React.FC = () => {
 
       if (programIds.length > 0 || programIds.length === 0) {
         const insertResponse = await axios.post(
-          'http://localhost:8000/api/ugForm/insertProgram',
+          '/api/ugForm/insertProgram',
           {
             programIds: programIds     
           },
@@ -555,7 +555,7 @@ const CollegeProgramForm: React.FC = () => {
   const sendRegulatingCouncilsData = async () => {
     try {
       const response = await axios.post(
-        'http://localhost:8000/api/ugform/setSection3',
+        '/api/ugform/setSection3',
         {
           count_regulating: formData.regulatingCouncilsNumber,
           count_others: formData.ccfugpProgramsNumber
@@ -567,7 +567,7 @@ const CollegeProgramForm: React.FC = () => {
     
       if (programIds.length > 0 || programIds.length === 0) {
         const insertResponse = await axios.post(
-          'http://localhost:8000/api/ugform/insertRegulatingProgram',
+          '/api/ugform/insertRegulatingProgram',
           {
             programIds: programIds
           },
@@ -581,7 +581,7 @@ const CollegeProgramForm: React.FC = () => {
       
       if (ccfugpProgramIds.length > 0 || ccfugpProgramIds.length === 0) {
         const insertCcfugpResponse = await axios.post(
-          'http://localhost:8000/api/ugform/insertNonAlignedProgram',
+          '/api/ugform/insertNonAlignedProgram',
           {
             programIds: ccfugpProgramIds
           },
@@ -597,7 +597,7 @@ const CollegeProgramForm: React.FC = () => {
   //Send Page 3 data
   const setSection4 = async() => {
     try {
-      const response = await axios.post('http://localhost:8000/api/ugform/setSection4', {
+      const response = await axios.post('/api/ugform/setSection4', {
         count_non_bvoc : formData.bachelorDegreeNumber,
         count_bvoc : formData.bVocNumber
       }, {withCredentials: true})
@@ -607,7 +607,7 @@ const CollegeProgramForm: React.FC = () => {
 
       if (programIdsList1.length > 0 || programIdsList1.length === 0) {
         const insertResponse = await axios.post(
-          'http://localhost:8000/api/ugform/insertBachelorProgram',
+          '/api/ugform/insertBachelorProgram',
           {
             programIds: programIdsList1      
           },
@@ -619,7 +619,7 @@ const CollegeProgramForm: React.FC = () => {
 
       if (programIdsList2.length > 0 || programIdsList2.length === 0) {
         const insertResponse = await axios.post(
-          'http://localhost:8000/api/ugform/insertBvoc',
+          '/api/ugform/insertBvoc',
           {
             programIds: programIdsList2 
           },
@@ -637,7 +637,7 @@ const CollegeProgramForm: React.FC = () => {
   //Send Page 4 Data
   const setSection5 = async() => {
     try {
-      const response = await axios.post('http://localhost:8000/api/ugform/setSection5', {
+      const response = await axios.post('/api/ugform/setSection5', {
         count_bach : formData.fourYearBachelorNumber,
         count_honor: formData.honoursWithResearchNumber
       }, {withCredentials: true})
@@ -647,7 +647,7 @@ const CollegeProgramForm: React.FC = () => {
 
       if (programIdsList1.length > 0 || programIdsList1.length === 0) {
         const insertResponse = await axios.post(
-          'http://localhost:8000/api/ugform/insert4YrBachelor',
+          '/api/ugform/insert4YrBachelor',
           {
             programIds: programIdsList1      
           },
@@ -659,7 +659,7 @@ const CollegeProgramForm: React.FC = () => {
 
       if (programIdsList2.length > 0 || programIdsList2.length === 0) {
         const insertResponse = await axios.post(
-          'http://localhost:8000/api/ugform/insert4YrHonor',
+          '/api/ugform/insert4YrHonor',
           {
             programIds: programIdsList2 
           },
@@ -676,7 +676,7 @@ const CollegeProgramForm: React.FC = () => {
 
   const setSection6 = async() => {
     try {
-      const response = await axios.post('http://localhost:8000/api/ugform/setSection6', {
+      const response = await axios.post('/api/ugform/setSection6', {
         count_ITEP : formData.itepProgramsNumber,
         count_4year_integrated: formData.integratedDegreeNumber,
         count_PhD_after4years : formData.phdStudentsNumber
@@ -685,7 +685,7 @@ const CollegeProgramForm: React.FC = () => {
       const programIds = await fetchProgramId(formData.selectedIntegratedDegree)
       const number = await programIds.map(Number)
 
-      const insertResponse = await axios.post('http://localhost:8000/api/ugform/insert4Integrated', {programIds: number}, {withCredentials: true})
+      const insertResponse = await axios.post('/api/ugform/insert4Integrated', {programIds: number}, {withCredentials: true})
     } catch (error) {
       console.log('Error while sending section 6 data', error)
     }
@@ -693,13 +693,13 @@ const CollegeProgramForm: React.FC = () => {
 
   const setSection7 = async() => {
     try {
-      const response = await axios.post('http://localhost:8000/api/ugform/setSection7', {
+      const response = await axios.post('/api/ugform/setSection7', {
         count_5years_integrated: formData.fiveYearIntegratedNumber
       }, {withCredentials: true})
 
       const programIds = await fetchProgramId(formData.selectedFiveYearIntegrated)
 
-      const insertResponse = await axios.post('http://localhost:8000/api/ugform/insert5Integrated', {programIds: programIds}, {withCredentials: true})
+      const insertResponse = await axios.post('/api/ugform/insert5Integrated', {programIds: programIds}, {withCredentials: true})
     } catch (error) {
       console.log('Error while sending page 7 data', error)
     }
@@ -707,13 +707,13 @@ const CollegeProgramForm: React.FC = () => {
 
   const setSection8 = async() => {
     try {
-      const response = await axios.post('http://localhost:8000/api/ugform/setSection8', {
+      const response = await axios.post('/api/ugform/setSection8', {
         count_ordinance: formData.ordinanceFlexibilityNumber,
         count_actual: formData.flexibilityProvidedNumber
       }, {withCredentials: true})
 
       const programIds = await fetchProgramId(formData.selectedFlexibilityProvided)
-      const insertResponse = await axios.post('http://localhost:8000/api/ugform/insertFlexibility', {programIds: programIds}, {withCredentials: true})
+      const insertResponse = await axios.post('/api/ugform/insertFlexibility', {programIds: programIds}, {withCredentials: true})
     } catch (error) {
       console.log('Error while posting page 8 data', error)
     }
@@ -832,10 +832,10 @@ const CollegeProgramForm: React.FC = () => {
   useEffect(() => {
     const fetchUniversityData = async () => {
       try {
-        const uniName = await axios.get('http://localhost:8000/api/ugform/getName', {withCredentials: true})
+        const uniName = await axios.get('/api/ugform/getName', {withCredentials: true})
         const uniData = uniName.data.data
 
-        const totalProgramsResponse = await axios.get('http://localhost:8000/api/ugform/total', {withCredentials: true})
+        const totalProgramsResponse = await axios.get('/api/ugform/total', {withCredentials: true})
         const totalPrograms = totalProgramsResponse.data.data
 
         const mockUniversityData: UniversityData = {
@@ -862,7 +862,7 @@ const CollegeProgramForm: React.FC = () => {
   useEffect(() => {
     const fetchPrograms = async() => {
       try {
-        const response = await axios.get('http://localhost:8000/api/program/getUG', {withCredentials: true})
+        const response = await axios.get('/api/program/getUG', {withCredentials: true})
         const data = response.data.data
         const names = data.map((course: any) => course.name);
         setCourseOptions(names)

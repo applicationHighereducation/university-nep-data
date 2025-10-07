@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuth = async () => {
     try {
       // Call backend to verify token via cookies
-      const response = await axios.get("http://localhost:8000/api/me", {
+      const response = await axios.get("/api/me", {
         withCredentials: true, // 👈 important, sends cookies
       });
 
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (userData: RegisterData): Promise<boolean> => {
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:8000/api/user', userData);
+      const response = await axios.post('/api/user', userData);
       
       if (response.status === 200 || response.status === 201) {
         toast({
@@ -102,7 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const verifyOtp = async (email: string, otp: string): Promise<boolean> => {
     try {
       setLoading(true);
-      const response = await axios.post('http://localhost:8000/api/verify', { email, otp });
+      const response = await axios.post('/api/verify', { email, otp });
       
       if (response.status === 200) {
         toast({
@@ -129,7 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   try {
     setLoading(true);
     const response = await axios.post(
-      "http://localhost:8000/api/login",
+      "/api/login",
       { email, password },
       { withCredentials: true } // 👈 Important: allow cookies
     );
@@ -170,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async (): Promise<void> => {
   try {
     await axios.post(
-      "http://localhost:8000/api/logout",
+      "/api/logout",
       {},
       { withCredentials: true } 
     );
